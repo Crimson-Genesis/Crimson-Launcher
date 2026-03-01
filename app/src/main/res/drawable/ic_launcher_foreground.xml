@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Geometric Angular C -->
+    <path
+        android:fillColor="#8B0000"
+        android:pathData="M78,35 L48,21 L26,45 L28,63 L52,87 L80,73 L80,63 L53,74 L39,63 L37,45 L51,33 L78,45 Z" />
+
+    <!-- Central Ignition Spike (Diamond) - Rotated back to vertical (90 degrees from horizontal) -->
+    <path
+        android:fillColor="#8B0000"
+        android:pathData="M54,39 L60,54 L54,69 L48,54 Z" />
+
+</vector>

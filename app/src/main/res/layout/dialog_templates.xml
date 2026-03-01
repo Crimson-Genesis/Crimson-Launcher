@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/rounded_rect_shade_color"
+    android:padding="8dp"
+    android:fitsSystemWindows="true">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        style="@style/TextLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:padding="16dp"
+        android:text="@string/templates"
+        android:gravity="center"
+        android:textStyle="bold" />
+
+    <View
+        android:id="@+id/dividerTop"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/tvTitle"
+        android:layout_marginHorizontal="16dp"
+        android:background="?attr/primaryColor"
+        android:alpha="0.1" />
+
+    <TextView
+        android:id="@+id/btnAddTemplate"
+        style="@style/TextLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:padding="16dp"
+        android:text="@string/add_template"
+        android:gravity="center"
+        android:textStyle="bold" />
+
+    <View
+        android:id="@+id/dividerBottom"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_above="@id/btnAddTemplate"
+        android:layout_marginHorizontal="16dp"
+        android:background="?attr/primaryColor"
+        android:alpha="0.1" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvTemplates"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/dividerTop"
+        android:layout_above="@id/dividerBottom"
+        android:maxHeight="400dp"
+        android:overScrollMode="never" />
+
+    <TextView
+        android:id="@+id/tvNoTemplates"
+        style="@style/TextLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:padding="16dp"
+        android:gravity="center"
+        android:text="@string/no_templates"
+        android:visibility="gone" />
+
+</RelativeLayout>

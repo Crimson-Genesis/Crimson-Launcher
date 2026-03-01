@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
+    android:background="?attr/primaryShadeDarkColor"
+    android:orientation="vertical"
+    android:paddingTop="64dp"
+    tools:context=".ui.TodoFragment">
+
+    <!-- Create Task Section (Fixed Height) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <EditText
+            android:id="@+id/etTodo"
+            style="@style/TextLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:background="@drawable/rounded_rect_shade_color"
+            android:hint="Enter your task here"
+            android:padding="16dp" />
+
+        <LinearLayout
+            android:id="@+id/llDaily"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:background="@drawable/rounded_rect_shade_color"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <Button
+                android:id="@+id/btnMon"
+                style="@style/DayOfWeekButton"
+                android:text="M" />
+
+            <Button
+                android:id="@+id/btnTue"
+                style="@style/DayOfWeekButton"
+                android:text="T" />
+
+            <Button
+                android:id="@+id/btnWed"
+                style="@style/DayOfWeekButton"
+                android:text="W" />
+
+            <Button
+                android:id="@+id/btnThu"
+                style="@style/DayOfWeekButton"
+                android:text="T" />
+
+            <Button
+                android:id="@+id/btnFri"
+                style="@style/DayOfWeekButton"
+                android:text="F" />
+
+            <Button
+                android:id="@+id/btnSat"
+                style="@style/DayOfWeekButton"
+                android:text="S" />
+
+            <Button
+                android:id="@+id/btnSun"
+                style="@style/DayOfWeekButton"
+                android:text="S" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/llTimed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:background="@drawable/rounded_rect_shade_color"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/tvDate"
+                style="@style/TextLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="Select Date" />
+
+            <TextView
+                android:id="@+id/tvTime"
+                style="@style/TextLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:text="Select Time" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnTemplate"
+                style="@style/TextLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:background="@drawable/rounded_rect_shade_color"
+                android:text="@string/templates" />
+
+            <Button
+                android:id="@+id/btnSave"
+                style="@style/TextLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:background="@drawable/rounded_rect_shade_color"
+                android:text="Save" />
+
+            <Button
+                android:id="@+id/btnToggleAll"
+                style="@style/TextLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:background="@drawable/rounded_rect_shade_color"
+                android:text="All" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="20dp"
+        android:background="?attr/primaryColor"
+        android:alpha="0.2" />
+
+    <!-- Manage Daily Tasks Section (Fills remaining space and scrollable) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvDailyTasksHeader"
+            style="@style/TextLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
+            android:text="All Daily Tasks" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvDailyTasks"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp" />
+    </LinearLayout>
+
+</LinearLayout>

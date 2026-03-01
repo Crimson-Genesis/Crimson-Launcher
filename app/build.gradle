@@ -1,0 +1,111 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
+}
+
+android {
+    compileSdk 35
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    defaultConfig {
+        applicationId "app.crimson.launcher"
+        minSdkVersion 24
+        targetSdkVersion 35
+        versionCode 2
+        versionName "1.1"
+
+        resourceConfigurations += ["en", "ar", "de", "es-rES", "es-rUS", "fr", "he", "hr", "hu", "in", "it", "ja", "nl", "pl", "pt-rBR", "ru-rRU", "sv", "tr", "uk", "zh"]
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            if (project.hasProperty('MYAPP_STORE_FILE')) {
+                storeFile file(MYAPP_STORE_FILE)
+                storePassword MYAPP_STORE_PASSWORD
+                keyAlias MYAPP_KEY_ALIAS
+                keyPassword MYAPP_KEY_PASSWORD
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            debuggable false
+            minifyEnabled false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+            minifyEnabled false
+            applicationIdSuffix ".debug"
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "Crimson_Launcher_v${variant.versionName}.apk"
+        }
+    }
+
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
+    }
+    namespace 'app.olauncher'
+    lint {
+        disable "NullSafeMutableLiveData"
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+// Helper task to generate a keystore for the build process if it doesn't exist
+tasks.register('generateKeystore') {
+    doLast {
+        if (project.hasProperty('MYAPP_STORE_FILE')) {
+            def keystoreFile = file(MYAPP_STORE_FILE)
+            if (!keystoreFile.exists()) {
+                println "Generating keystore..."
+                exec {
+                    commandLine 'keytool', '-genkey', '-v', '-keystore', keystoreFile, '-alias', MYAPP_KEY_ALIAS, '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000', '-storepass', MYAPP_STORE_PASSWORD, '-keypass', MYAPP_KEY_PASSWORD, '-dname', 'CN=Crimson, OU=Dev, O=Crimson, L=World, S=World, C=US'
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation libs.kotlin.stdlib
+    implementation libs.core.ktx
+    implementation libs.appcompat
+    implementation libs.recyclerview
+
+    // Android lifecycle
+    implementation libs.lifecycle.extensions
+    implementation libs.lifecycle.viewmodel.ktx
+
+    // Navigation
+    implementation libs.navigation.fragment.ktx
+
+    //Material dependency
+    implementation libs.material
+
+    // Room
+    implementation libs.room.runtime
+    implementation libs.room.ktx
+    ksp libs.room.compiler
+
+}
