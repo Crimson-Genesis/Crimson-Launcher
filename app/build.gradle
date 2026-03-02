@@ -4,7 +4,28 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+def localProps = new java.util.Properties()
+def localPropsFile = rootProject.file("local.properties")
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream { stream -> localProps.load(stream) }
+}
+
+def readSigningProp = { String key ->
+    def gradleValue = project.findProperty(key)
+    if (gradleValue != null && gradleValue.toString().trim()) return gradleValue.toString().trim()
+    def localValue = localProps.getProperty(key)
+    if (localValue != null && localValue.trim()) return localValue.trim()
+    return null
+}
+
+def signingStoreFilePath = readSigningProp("MYAPP_STORE_FILE")
+def signingStorePassword = readSigningProp("MYAPP_STORE_PASSWORD")
+def signingKeyAlias = readSigningProp("MYAPP_KEY_ALIAS")
+def signingKeyPassword = readSigningProp("MYAPP_KEY_PASSWORD")
+def hasSigningConfig = signingStoreFilePath && signingStorePassword && signingKeyAlias && signingKeyPassword
+
 android {
+    namespace 'app.olauncher'
     compileSdk 35
 
     compileOptions {
@@ -20,8 +41,8 @@ android {
         applicationId "app.crimson.launcher"
         minSdkVersion 24
         targetSdkVersion 35
-        versionCode 2
-        versionName "1.1"
+        versionCode 4
+        versionName "1.2"
 
         resourceConfigurations += ["en", "ar", "de", "es-rES", "es-rUS", "fr", "he", "hr", "hu", "in", "it", "ja", "nl", "pl", "pt-rBR", "ru-rRU", "sv", "tr", "uk", "zh"]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -29,11 +50,11 @@ android {
 
     signingConfigs {
         release {
-            if (project.hasProperty('MYAPP_STORE_FILE')) {
-                storeFile file(MYAPP_STORE_FILE)
-                storePassword MYAPP_STORE_PASSWORD
-                keyAlias MYAPP_KEY_ALIAS
-                keyPassword MYAPP_KEY_PASSWORD
+            if (hasSigningConfig) {
+                storeFile rootProject.file(signingStoreFilePath)
+                storePassword signingStorePassword
+                keyAlias signingKeyAlias
+                keyPassword signingKeyPassword
             }
         }
     }
@@ -42,7 +63,9 @@ android {
         release {
             debuggable false
             minifyEnabled false
-            signingConfig signingConfigs.release
+            if (hasSigningConfig) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -63,7 +86,7 @@ android {
         viewBinding = true
         buildConfig = true
     }
-    namespace 'app.olauncher'
+
     lint {
         disable "NullSafeMutableLiveData"
         checkReleaseBuilds false
@@ -74,12 +97,12 @@ android {
 // Helper task to generate a keystore for the build process if it doesn't exist
 tasks.register('generateKeystore') {
     doLast {
-        if (project.hasProperty('MYAPP_STORE_FILE')) {
-            def keystoreFile = file(MYAPP_STORE_FILE)
+        if (hasSigningConfig) {
+            def keystoreFile = rootProject.file(signingStoreFilePath)
             if (!keystoreFile.exists()) {
                 println "Generating keystore..."
                 exec {
-                    commandLine 'keytool', '-genkey', '-v', '-keystore', keystoreFile, '-alias', MYAPP_KEY_ALIAS, '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000', '-storepass', MYAPP_STORE_PASSWORD, '-keypass', MYAPP_KEY_PASSWORD, '-dname', 'CN=Crimson, OU=Dev, O=Crimson, L=World, S=World, C=US'
+                    commandLine 'keytool', '-genkey', '-v', '-keystore', keystoreFile, '-alias', signingKeyAlias, '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000', '-storepass', signingStorePassword, '-keypass', signingKeyPassword, '-dname', 'CN=Crimson, OU=Dev, O=Crimson, L=World, S=World, C=US'
                 }
             }
         }

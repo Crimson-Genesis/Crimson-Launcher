@@ -19,6 +19,7 @@ import app.olauncher.R
 import app.olauncher.data.TodoItem
 import app.olauncher.data.TodoType
 import app.olauncher.databinding.DialogEditTaskBinding
+import app.olauncher.helper.showToast
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -30,7 +31,8 @@ class EditTaskDialogFragment : DialogFragment() {
     private val binding get() = _binding!!
 
     private lateinit var viewModel: MainViewModel
-    private val calendar: Calendar = Calendar.getInstance()
+    private val fromCalendar: Calendar = Calendar.getInstance()
+    private val toCalendar: Calendar = Calendar.getInstance()
     private var todoItem: TodoItem? = null
 
     // Mapping for 3-character storage while using 1-character UI
@@ -83,7 +85,7 @@ class EditTaskDialogFragment : DialogFragment() {
     private fun populateFields() {
         todoItem?.let { item ->
             binding.etTodo.setText(item.task)
-            
+
             // Populate days
             val days = item.daysOfWeek?.split(" ") ?: emptyList()
             for (button in binding.llDaily.children) {
@@ -92,25 +94,39 @@ class EditTaskDialogFragment : DialogFragment() {
                     button.isSelected = days.contains(dayName)
                 }
             }
-            updateDatePickerState()
 
             // Populate date/time
-            if (item.type == TodoType.TIMED && item.dueDate != null) {
-                calendar.timeInMillis = item.dueDate
-                updateDateText()
-                updateTimeText()
-                // Disable daily section if it's a timed task
-                binding.llDaily.alpha = 0.5f
-                for (button in binding.llDaily.children) {
-                    button.isEnabled = false
+            if (item.type == TodoType.TIMED) {
+                item.dueDate?.let {
+                    fromCalendar.timeInMillis = it
+                    updateDateText(true)
+                    updateTimeText(true)
+                } ?: run {
+                    binding.tvDate.text = "From Date"
+                    binding.tvTime.text = item.time ?: "From Time"
+                }
+
+                item.toDate?.let {
+                    toCalendar.timeInMillis = it
+                    updateDateText(false)
+                    updateTimeText(false)
+                } ?: run {
+                    binding.tvToDate.text = "To Date"
+                    binding.tvToTime.text = item.toTime ?: "To Time"
                 }
             } else if (item.type == TodoType.DAILY) {
                 if (item.time != null) {
                     binding.tvTime.text = item.time
+                } else {
+                    binding.tvTime.text = "From Time"
                 }
-                binding.tvDate.isEnabled = false
-                binding.tvDate.alpha = 0.5f
+                if (item.toTime != null) {
+                    binding.tvToTime.text = item.toTime
+                } else {
+                    binding.tvToTime.text = "To Time"
+                }
             }
+            updateDatePickerState()
         }
     }
 
@@ -127,27 +143,71 @@ class EditTaskDialogFragment : DialogFragment() {
 
     private fun updateDatePickerState() {
         val isAnyDaySelected = binding.llDaily.children.any { it.isSelected }
-        binding.tvDate.isEnabled = !isAnyDaySelected
-        binding.tvDate.alpha = if (isAnyDaySelected) 0.5f else 1.0f
+        val isFromDateSet = binding.tvDate.text != "From Date"
+        val isFromTimeSet = binding.tvTime.text != "From Time"
+
+        if (isAnyDaySelected) {
+            binding.tvDate.isEnabled = false
+            binding.tvDate.alpha = 0.5f
+            binding.tvToDate.isEnabled = false
+            binding.tvToDate.alpha = 0.5f
+            
+            binding.llDaily.alpha = 1.0f
+            for (button in binding.llDaily.children) button.isEnabled = true
+        } else {
+            binding.tvDate.isEnabled = true
+            binding.tvDate.alpha = 1.0f
+            
+            binding.tvToDate.isEnabled = isFromDateSet
+            binding.tvToDate.alpha = if (isFromDateSet) 1.0f else 0.5f
+
+            val dailyEnabled = !isFromDateSet
+            binding.llDaily.alpha = if (dailyEnabled) 1.0f else 0.5f
+            for (button in binding.llDaily.children) button.isEnabled = dailyEnabled
+        }
+
+        binding.tvToTime.isEnabled = isFromTimeSet
+        binding.tvToTime.alpha = if (isFromTimeSet) 1.0f else 0.5f
     }
 
     private fun setupDateTimePickers() {
-        binding.tvDate.setOnClickListener { showDatePicker() }
-        binding.tvTime.setOnClickListener { showTimePicker() }
+        binding.tvDate.setOnClickListener { showDatePicker(true) }
+        binding.tvToDate.setOnClickListener { showDatePicker(false) }
+        binding.tvTime.setOnClickListener { showTimePicker(true) }
+        binding.tvToTime.setOnClickListener { showTimePicker(false) }
+
+        binding.tvDate.setOnLongClickListener { clearField(it.id); true }
+        binding.tvToDate.setOnLongClickListener { clearField(it.id); true }
+        binding.tvTime.setOnLongClickListener { clearField(it.id); true }
+        binding.tvToTime.setOnLongClickListener { clearField(it.id); true }
     }
 
-    private fun showDatePicker() {
+    private fun clearField(id: Int) {
+        when (id) {
+            R.id.tvDate -> {
+                binding.tvDate.text = "From Date"
+                binding.tvToDate.text = "To Date"
+            }
+            R.id.tvToDate -> binding.tvToDate.text = "To Date"
+            R.id.tvTime -> {
+                binding.tvTime.text = "From Time"
+                binding.tvToTime.text = "To Time"
+            }
+            R.id.tvToTime -> binding.tvToTime.text = "To Time"
+        }
+        updateDatePickerState()
+    }
+
+    private fun showDatePicker(isFrom: Boolean) {
+        val calendar = if (isFrom) fromCalendar else toCalendar
         val datePickerDialog = DatePickerDialog(
             requireContext(),
             { _, year, month, dayOfMonth ->
                 calendar.set(Calendar.YEAR, year)
                 calendar.set(Calendar.MONTH, month)
                 calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                updateDateText()
-                binding.llDaily.alpha = 0.5f
-                for (button in binding.llDaily.children) {
-                    button.isEnabled = false
-                }
+                updateDateText(isFrom)
+                updateDatePickerState()
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
@@ -156,13 +216,15 @@ class EditTaskDialogFragment : DialogFragment() {
         datePickerDialog.show()
     }
 
-    private fun showTimePicker() {
+    private fun showTimePicker(isFrom: Boolean) {
+        val calendar = if (isFrom) fromCalendar else toCalendar
         val timePickerDialog = TimePickerDialog(
             requireContext(),
             { _, hourOfDay, minute ->
                 calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
                 calendar.set(Calendar.MINUTE, minute)
-                updateTimeText()
+                updateTimeText(isFrom)
+                updateDatePickerState()
             },
             calendar.get(Calendar.HOUR_OF_DAY),
             calendar.get(Calendar.MINUTE),
@@ -171,12 +233,16 @@ class EditTaskDialogFragment : DialogFragment() {
         timePickerDialog.show()
     }
 
-    private fun updateDateText() {
-        binding.tvDate.text = DateFormat.getDateInstance(DateFormat.MEDIUM).format(calendar.time)
+    private fun updateDateText(isFrom: Boolean) {
+        val calendar = if (isFrom) fromCalendar else toCalendar
+        val textView = if (isFrom) binding.tvDate else binding.tvToDate
+        textView.text = DateFormat.getDateInstance(DateFormat.MEDIUM).format(calendar.time)
     }
 
-    private fun updateTimeText() {
-        binding.tvTime.text = DateFormat.getTimeInstance(DateFormat.SHORT).format(calendar.time)
+    private fun updateTimeText(isFrom: Boolean) {
+        val calendar = if (isFrom) fromCalendar else toCalendar
+        val textView = if (isFrom) binding.tvTime else binding.tvToTime
+        textView.text = DateFormat.getTimeInstance(DateFormat.SHORT).format(calendar.time)
     }
 
     private fun saveTodo() {
@@ -184,13 +250,48 @@ class EditTaskDialogFragment : DialogFragment() {
         if (task.isBlank() || todoItem == null) return
 
         val isAnyDaySelected = binding.llDaily.children.any { it.isSelected }
-        val isDateSet = binding.tvDate.text != "Select Date"
-        val isTimeSet = binding.tvTime.text != "Select Time"
+        val isDateSet = binding.tvDate.text != "From Date"
+        val isToDateSet = binding.tvToDate.text != "To Date"
+        val isTimeSet = binding.tvTime.text != "From Time"
+        val isToTimeSet = binding.tvToTime.text != "To Time"
+
+        // Validation
+        if (isToDateSet && !isDateSet) {
+            context?.showToast("Cannot set 'To Date' without 'From Date'")
+            return
+        }
+        if (isToTimeSet && !isTimeSet) {
+            context?.showToast("Cannot set 'To Time' without 'From Time'")
+            return
+        }
+
+        if (isDateSet && isToDateSet) {
+            val fromDate = Calendar.getInstance().apply { timeInMillis = fromCalendar.timeInMillis }.apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
+            val toDate = Calendar.getInstance().apply { timeInMillis = toCalendar.timeInMillis }.apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
+            if (fromDate.after(toDate)) {
+                context?.showToast("'From Date' cannot be after 'To Date'")
+                return
+            }
+        }
+
+        if (isTimeSet && isToTimeSet) {
+            val fromMinutes = fromCalendar.get(Calendar.HOUR_OF_DAY) * 60 + fromCalendar.get(Calendar.MINUTE)
+            val toMinutes = toCalendar.get(Calendar.HOUR_OF_DAY) * 60 + toCalendar.get(Calendar.MINUTE)
+            
+            // If it's the same day or no date (daily), check time order
+            val isSameDay = !isDateSet || (isDateSet && isToDateSet && fromCalendar.get(Calendar.YEAR) == toCalendar.get(Calendar.YEAR) && fromCalendar.get(Calendar.DAY_OF_YEAR) == toCalendar.get(Calendar.DAY_OF_YEAR))
+            if (isSameDay && fromMinutes > toMinutes) {
+                context?.showToast("'From Time' cannot be after 'To Time' on the same day")
+                return
+            }
+        }
 
         val type: TodoType
         var daysOfWeek: String? = null
         var dueDate: Long? = null
+        var toDate: Long? = null
         var time: String? = null
+        var toTime: String? = null
 
         if (isAnyDaySelected) {
             type = TodoType.DAILY
@@ -201,9 +302,15 @@ class EditTaskDialogFragment : DialogFragment() {
             if (isTimeSet) {
                 time = binding.tvTime.text.toString()
             }
+            if (isToTimeSet) {
+                toTime = binding.tvToTime.text.toString()
+            }
         } else if (isDateSet) {
             type = TodoType.TIMED
-            dueDate = calendar.timeInMillis
+            dueDate = fromCalendar.timeInMillis
+            if(isToDateSet) toDate = toCalendar.timeInMillis
+            if (isTimeSet) time = binding.tvTime.text.toString()
+            if (isToTimeSet) toTime = binding.tvToTime.text.toString()
         } else {
             type = TodoType.TIMELESS
         }
@@ -213,7 +320,9 @@ class EditTaskDialogFragment : DialogFragment() {
             type = type,
             daysOfWeek = daysOfWeek,
             dueDate = dueDate,
-            time = time
+            time = time,
+            toDate = toDate,
+            toTime = toTime
         )
 
         viewModel.update(updatedItem)

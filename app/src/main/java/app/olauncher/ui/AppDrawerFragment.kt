@@ -21,6 +21,8 @@ import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
 import app.olauncher.databinding.FragmentAppDrawerBinding
+import app.olauncher.helper.EventLogger
+import app.olauncher.helper.LogEvent
 import app.olauncher.helper.deletePinnedShortcut
 import app.olauncher.helper.hideKeyboard
 import app.olauncher.helper.isSystemApp
@@ -39,6 +41,7 @@ class AppDrawerFragment : Fragment() {
 
     private var flag = Constants.FLAG_LAUNCH_APP
     private var canRename = false
+    private var source = "button" // Default source
 
     private val viewModel: MainViewModel by activityViewModels()
     private var _binding: FragmentAppDrawerBinding? = null
@@ -59,6 +62,7 @@ class AppDrawerFragment : Fragment() {
         arguments?.let {
             flag = it.getInt(Constants.Key.FLAG, Constants.FLAG_LAUNCH_APP)
             canRename = it.getBoolean(Constants.Key.RENAME, false)
+            source = it.getString("source", "button")
         }
 
         initViews()
@@ -66,6 +70,20 @@ class AppDrawerFragment : Fragment() {
         initAdapter()
         initObservers()
         initClickListeners()
+
+        logDrawerOpened()
+    }
+
+    private fun logDrawerOpened() {
+        val query = binding.search.query.toString()
+        EventLogger.log(
+            requireContext(),
+            LogEvent.DrawerOpened(
+                source = source,
+                queryLength = query.length,
+                resultsCount = adapter.itemCount
+            )
+        )
     }
 
     private fun initViews() {

@@ -301,10 +301,10 @@ fun generateBackupJson(context: Context, items: List<TodoItem>, templates: List<
         val settingsJson = JSONObject()
         val allPrefs = prefs.all
         Log.d("BackupLog", "Backing up ${allPrefs.size} prefs")
-        
+
         // Exclude specific local/temporary preferences from backup
         val keysToExclude = setOf("ACTIVE_BOILER_ID", "LAUNCHER_RECREATE_TIMESTAMP", "SCREEN_TIME_LAST_UPDATED", "SHOWN_ON_DAY_OF_YEAR")
-        
+
         allPrefs.forEach { (key, value) ->
             if (key in keysToExclude) return@forEach
             runCatching {
@@ -373,6 +373,8 @@ private fun serializeTodoItem(item: TodoItem): JSONObject {
         put("dueDate", item.dueDate ?: JSONObject.NULL)
         put("time", item.time ?: JSONObject.NULL)
         put("completedAt", item.completedAt ?: JSONObject.NULL)
+        put("toDate", item.toDate ?: JSONObject.NULL)
+        put("toTime", item.toTime ?: JSONObject.NULL)
     }
 }
 
@@ -383,6 +385,8 @@ private fun serializeTemplateItem(item: TodoTemplateItem): JSONObject {
         put("daysOfWeek", item.daysOfWeek ?: JSONObject.NULL)
         put("dueDate", item.dueDate ?: JSONObject.NULL)
         put("time", item.time ?: JSONObject.NULL)
+        put("toDate", item.toDate ?: JSONObject.NULL)
+        put("toTime", item.toTime ?: JSONObject.NULL)
     }
 }
 
@@ -461,7 +465,9 @@ private fun parseTodoItem(jsonObject: JSONObject): TodoItem {
         daysOfWeek = if (jsonObject.isNull("daysOfWeek")) null else jsonObject.optString("daysOfWeek"),
         dueDate = if (jsonObject.isNull("dueDate")) null else jsonObject.optLong("dueDate"),
         time = if (jsonObject.isNull("time")) null else jsonObject.optString("time"),
-        completedAt = if (jsonObject.isNull("completedAt")) null else jsonObject.optLong("completedAt")
+        completedAt = if (jsonObject.isNull("completedAt")) null else jsonObject.optLong("completedAt"),
+        toDate = if (jsonObject.isNull("toDate")) null else jsonObject.optLong("toDate"),
+        toTime = if (jsonObject.isNull("toTime")) null else jsonObject.optString("toTime")
     )
 }
 
@@ -475,6 +481,8 @@ private fun parseTemplateItem(jsonObject: JSONObject): TodoTemplateItem {
         type = type,
         daysOfWeek = if (jsonObject.isNull("daysOfWeek")) null else jsonObject.optString("daysOfWeek"),
         dueDate = if (jsonObject.isNull("dueDate")) null else jsonObject.optLong("dueDate"),
-        time = if (jsonObject.isNull("time")) null else jsonObject.optString("time")
+        time = if (jsonObject.isNull("time")) null else jsonObject.optString("time"),
+        toDate = if (jsonObject.isNull("toDate")) null else jsonObject.optLong("toDate"),
+        toTime = if (jsonObject.isNull("toTime")) null else jsonObject.optString("toTime")
     )
 }

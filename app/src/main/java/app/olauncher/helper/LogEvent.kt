@@ -10,12 +10,26 @@ sealed class LogEvent {
     data class TaskEdited(val old: TodoItem, val updated: TodoItem, val changedFields: List<String>, val snapshot: DailySnapshot) : LogEvent()
     data class DayReset(val summary: DaySummary) : LogEvent()
     object AppOpened : LogEvent()
+    data class AppClosed(val uptimeMs: Long) : LogEvent()
+    data class DrawerOpened(val source: String, val queryLength: Int, val resultsCount: Int) : LogEvent()
+    data class AppLaunched(
+        val packageName: String,
+        val activity: String?,
+        val userHandle: String,
+        val renamedLabelUsed: Boolean,
+        val isHidden: Boolean
+    ) : LogEvent()
+    data class HardcoreModeToggled(val newState: Boolean) : LogEvent()
     data class BackupCreated(val bytes: Long) : LogEvent()
+    data class BackupFailed(val errorMessage: String) : LogEvent()
     data class RestorePerformed(val restoredCount: Int) : LogEvent()
+    data class RestoreFailed(val errorMessage: String) : LogEvent()
     data class LogFolderChanged(val oldUri: String?, val newUri: String?) : LogEvent()
     data class LoggingEnabled(val ts: Long) : LogEvent()
     data class LoggingDisabled(val ts: Long) : LogEvent()
     data class ResetTimeChanged(val oldMinutes: Int, val newMinutes: Int) : LogEvent()
+    data class LogWriteFailed(val errorMessage: String, val target: String) : LogEvent()
+    data class SettingsChanged(val key: String, val value: Any) : LogEvent()
     
     // Template Events
     data class TemplateAdded(val name: String, val taskCount: Int) : LogEvent()

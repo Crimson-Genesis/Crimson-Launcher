@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import app.olauncher.BuildConfig
 import app.olauncher.MainActivity
+import app.olauncher.R
 import app.olauncher.data.Prefs
 import app.olauncher.data.TodoItem
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +28,7 @@ object EventLogger {
 
     private val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
     private val fileFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    private val localIsoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US)
 
     fun log(context: Context, event: LogEvent) {
         val eventName = getEventName(event)
@@ -35,13 +37,13 @@ object EventLogger {
         }
 
         val prefs = Prefs(context)
-        if (!prefs.isLoggingEnabled) return
+        if (!prefs.isLoggingEnabled && event !is LogEvent.LoggingEnabled) return
         
         val appContext = context.applicationContext
         scope.launch {
             try {
                 val now = System.currentTimeMillis()
-                val json = buildJsonObject(appContext, event, now)
+                val json = buildJsonObject(appContext, event, now, prefs)
                 val logLine = json.toString() + "\n"
                 
                 val dateStr = fileFormat.format(Date(now))
@@ -56,7 +58,12 @@ object EventLogger {
                 }
                 
                 if (!success) {
-                    writeToInternal(appContext, dateStr, logLine)
+                    success = writeToInternal(appContext, dateStr, logLine)
+                }
+
+                if (!success && event !is LogEvent.LogWriteFailed) {
+                    // Try to log failure itself (though likely to fail if storage is full)
+                    log(appContext, LogEvent.LogWriteFailed("Both SAF and internal failed", if (folderUri.isNullOrEmpty()) "internal" else "saf/internal"))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to log event: $eventName", e)
@@ -64,7 +71,7 @@ object EventLogger {
         }
     }
 
-    private fun buildJsonObject(context: Context, event: LogEvent, now: Long): JSONObject {
+    private fun buildJsonObject(context: Context, event: LogEvent, now: Long, prefs: Prefs): JSONObject {
         val date = Date(now)
         val cal = Calendar.getInstance()
         cal.time = date
@@ -72,10 +79,17 @@ object EventLogger {
         val json = JSONObject().apply {
             put("ts", now)
             put("ts_human", isoFormat.format(date))
+            put("ts_local_human", localIsoFormat.format(date))
             put("event", getEventName(event))
             put("session_id", MainActivity.sessionId)
             put("app_version", BuildConfig.VERSION_NAME)
             put("device_id", getDeviceId(context))
+            put("reset_time_minutes", prefs.resetTimeMinutes)
+            put("hardcore_mode", prefs.hardcoreMode)
+        }
+
+        if (event is LogEvent.AppOpened || event is LogEvent.AppClosed) {
+            json.put("app_label", context.getString(R.string.app_name))
         }
 
         when (event) {
@@ -106,11 +120,35 @@ object EventLogger {
                 json.put("day_summary", summaryToJson(event.summary))
             }
             is LogEvent.AppOpened -> {}
+            is LogEvent.AppClosed -> {
+                json.put("uptime_ms", event.uptimeMs)
+            }
+            is LogEvent.DrawerOpened -> {
+                json.put("source", event.source)
+                json.put("search_query_length", event.queryLength)
+                json.put("results_count", event.resultsCount)
+            }
+            is LogEvent.AppLaunched -> {
+                json.put("package", event.packageName)
+                json.put("activity", event.activity)
+                json.put("user_handle", event.userHandle)
+                json.put("renamed_label_used", event.renamedLabelUsed)
+                json.put("is_hidden", event.isHidden)
+            }
+            is LogEvent.HardcoreModeToggled -> {
+                json.put("new_state", if (event.newState) "on" else "off")
+            }
             is LogEvent.BackupCreated -> {
                 json.put("bytes", event.bytes)
             }
+            is LogEvent.BackupFailed -> {
+                json.put("error_message", event.errorMessage)
+            }
             is LogEvent.RestorePerformed -> {
                 json.put("restored_count", event.restoredCount)
+            }
+            is LogEvent.RestoreFailed -> {
+                json.put("error_message", event.errorMessage)
             }
             is LogEvent.LogFolderChanged -> {
                 json.put("old_uri", event.oldUri)
@@ -125,6 +163,14 @@ object EventLogger {
             is LogEvent.ResetTimeChanged -> {
                 json.put("old_minutes", event.oldMinutes)
                 json.put("new_minutes", event.newMinutes)
+            }
+            is LogEvent.LogWriteFailed -> {
+                json.put("error_message", event.errorMessage)
+                json.put("target", event.target)
+            }
+            is LogEvent.SettingsChanged -> {
+                json.put("key", event.key)
+                json.put("value", event.value)
             }
             is LogEvent.TemplateAdded -> {
                 json.put("name", event.name)
@@ -159,12 +205,20 @@ object EventLogger {
         is LogEvent.TaskEdited -> "task_edited"
         is LogEvent.DayReset -> "day_reset"
         is LogEvent.AppOpened -> "app_opened"
+        is LogEvent.AppClosed -> "app_closed"
+        is LogEvent.DrawerOpened -> "drawer_opened"
+        is LogEvent.AppLaunched -> "app_launched"
+        is LogEvent.HardcoreModeToggled -> "hardcore_mode_toggled"
         is LogEvent.BackupCreated -> "backup_created"
+        is LogEvent.BackupFailed -> "backup_failed"
         is LogEvent.RestorePerformed -> "restore_performed"
+        is LogEvent.RestoreFailed -> "restore_failed"
         is LogEvent.LogFolderChanged -> "log_folder_changed"
         is LogEvent.LoggingEnabled -> "logging_enabled"
         is LogEvent.LoggingDisabled -> "logging_disabled"
         is LogEvent.ResetTimeChanged -> "reset_time_changed"
+        is LogEvent.LogWriteFailed -> "log_write_failed"
+        is LogEvent.SettingsChanged -> "settings_changed"
         is LogEvent.TemplateAdded -> "template_added"
         is LogEvent.TemplateApplied -> "template_applied"
         is LogEvent.TemplateDeleted -> "template_deleted"
@@ -179,6 +233,11 @@ object EventLogger {
         put("due_date", todo.dueDate)
         todo.dueDate?.let {
             put("due_date_human", isoFormat.format(Date(it)))
+        }
+        put("to_time", todo.toTime)
+        put("to_date", todo.toDate)
+        todo.toDate?.let {
+            put("to_date_human", isoFormat.format(Date(it)))
         }
         put("is_completed", todo.isCompleted)
         put("completed_at", todo.completedAt)
@@ -217,14 +276,16 @@ object EventLogger {
         }
     }
 
-    private fun writeToInternal(context: Context, dateStr: String, content: String) {
-        try {
+    private fun writeToInternal(context: Context, dateStr: String, content: String): Boolean {
+        return try {
             val dir = File(context.filesDir, LOG_DIR)
             if (!dir.exists()) dir.mkdirs()
             val file = File(dir, "crimson_log_$dateStr.jsonl")
             FileOutputStream(file, true).use { it.write(content.toByteArray()) }
+            true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to write to internal storage", e)
+            false
         }
     }
 

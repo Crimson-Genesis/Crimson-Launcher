@@ -33,5 +33,7 @@ data class TodoTemplateItem(
     val type: TodoType,
     val dueDate: Long? = null,
     val time: String? = null,
-    val daysOfWeek: String? = null
+    val daysOfWeek: String? = null,
+    val toDate: Long? = null,
+    val toTime: String? = null
 )

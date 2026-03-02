@@ -257,7 +257,7 @@ class Prefs(context: Context) {
         set(value) = prefs.edit { putString(LAST_COMPLETION_DATE, value).apply() }
 
     var isLoggingEnabled: Boolean
-        get() = prefs.getBoolean(IS_LOGGING_ENABLED, true)
+        get() = prefs.getBoolean(IS_LOGGING_ENABLED, false)
         set(value) = prefs.edit { putBoolean(IS_LOGGING_ENABLED, value).apply() }
 
     var hardcoreMode: Boolean

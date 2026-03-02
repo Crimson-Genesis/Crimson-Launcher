@@ -201,6 +201,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     private fun toggleStatusBar() {
         prefs.showStatusBar = !prefs.showStatusBar
         populateStatusBar()
+        EventLogger.log(requireContext(), LogEvent.SettingsChanged("status_bar", prefs.showStatusBar))
     }
 
     private fun populateStatusBar() {
@@ -217,6 +218,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         prefs.dateTimeVisibility = selected
         populateDateTime()
         viewModel.toggleDateTime()
+        EventLogger.log(requireContext(), LogEvent.SettingsChanged("date_time_visibility", selected))
     }
 
     private fun populateDateTime() {
@@ -278,13 +280,17 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     private fun applyTextSizeScale() {
+        val activity = activity ?: return
+        if (activity.isFinishing || activity.isDestroyed || !isAdded) return
+
         if (pendingTextSizeScale < 0 || prefs.textSizeScale == pendingTextSizeScale) {
             pendingTextSizeScale = -1f
             return
         }
         prefs.textSizeScale = pendingTextSizeScale
+        EventLogger.log(requireContext(), LogEvent.SettingsChanged("text_size_scale", pendingTextSizeScale))
         pendingTextSizeScale = -1f
-        requireActivity().recreate()
+        activity.recreate()
     }
 
     private fun toggleKeyboardText() {
@@ -333,6 +339,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         if (prefs.swipeDownAction == swipeDownFor) return
         prefs.swipeDownAction = swipeDownFor
         populateSwipeDownAction()
+        EventLogger.log(requireContext(), LogEvent.SettingsChanged("swipe_down_action", swipeDownFor))
     }
 
     private fun populateLogFolderPath() {
@@ -366,9 +373,11 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     private fun toggleHardcoreMode() {
         if (prefs.hardcoreMode) {
             prefs.hardcoreMode = false
+            EventLogger.log(requireContext(), LogEvent.HardcoreModeToggled(false))
             populateHardcoreMode()
         } else {
             HardcoreModeConfirmDialogFragment.newInstance {
+                EventLogger.log(requireContext(), LogEvent.HardcoreModeToggled(true))
                 populateHardcoreMode()
             }.show(parentFragmentManager, "hardcore_confirm")
         }

@@ -10,6 +10,7 @@ import android.os.UserHandle
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
 import app.olauncher.data.AppDatabase
 import app.olauncher.data.AppModel
@@ -32,7 +33,10 @@ import app.olauncher.helper.usageStats.EventLogWrapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val appContext by lazy { application.applicationContext }
@@ -58,14 +62,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var cachedHiddenApps: List<AppModel>? = null
 
     // Todo list properties
-    private val repository: TodoItemRepository
-    private val templateRepository: TodoTemplateRepository
-    val todayTodoItems: LiveData<List<TodoItem>>
-    val completedTodoItems: LiveData<List<TodoItem>>
-    val upcomingTodoItems: LiveData<List<TodoItem>>
-    val allDailyTasks: LiveData<List<TodoItem>>
-    val allTodoItems: LiveData<List<TodoItem>>
-    val allTemplates: LiveData<List<TodoTemplate>>
+    private val database = AppDatabase.getDatabase(application)
+    private val repository = TodoItemRepository(database.todoItemDao())
+    private val templateRepository = TodoTemplateRepository(database.todoTemplateDao())
+    
+    // We use logicalDayTrigger to refresh todayTodoItems when logical day might have changed
+    private val logicalDayTrigger = MutableLiveData<Long>(System.currentTimeMillis())
+    
+    val todayTodoItems: LiveData<List<TodoItem>> = logicalDayTrigger.switchMap { timestamp ->
+        val logicalDate = prefs.getLogicalDayKey(timestamp)
+        val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
+        // Adjust cal if timestamp was before reset time today
+        val resetMinutes = prefs.resetTimeMinutes
+        val currentMinutes = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+        if (currentMinutes < resetMinutes) {
+            cal.add(Calendar.DAY_OF_YEAR, -1)
+        }
+        val dayOfWeek = SimpleDateFormat("EEE", Locale.US).format(cal.time)
+        repository.getTodayTodoItems(logicalDate, dayOfWeek)
+    }
+
+    val completedTodoItems: LiveData<List<TodoItem>> = repository.completedTodoItems
+    val upcomingTodoItems: LiveData<List<TodoItem>> = repository.upcomingTodoItems
+    val allDailyTasks: LiveData<List<TodoItem>> = repository.allDailyTasks
+    val allTodoItems: LiveData<List<TodoItem>> = database.todoItemDao().getAllTodoItems()
+    val allTemplates: LiveData<List<TodoTemplate>> = templateRepository.allTemplates
     
     private val _activeBoilerName = MutableLiveData<String>()
     val activeBoilerName: LiveData<String> get() = _activeBoilerName
@@ -102,22 +123,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     init {
-        val database = AppDatabase.getDatabase(application)
-        val todoItemDao = database.todoItemDao()
-        val todoTemplateDao = database.todoTemplateDao()
-        repository = TodoItemRepository(todoItemDao)
-        templateRepository = TodoTemplateRepository(todoTemplateDao)
-        todayTodoItems = repository.todayTodoItems
-        completedTodoItems = repository.completedTodoItems
-        upcomingTodoItems = repository.upcomingTodoItems
-        allDailyTasks = repository.allDailyTasks
-        allTodoItems = todoItemDao.getAllTodoItems()
-        allTemplates = templateRepository.allTemplates
-        
         _activeBoilerName.value = prefs.activeBoilerName
-        
         checkAndInsertDefaultTemplate()
-        
         launcherApps.registerCallback(appCallback)
     }
 
@@ -135,7 +142,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         
         // If activeBoilerId is -1, try to find the Default template and set it
         if (prefs.activeBoilerId == -1L) {
-            val database = AppDatabase.getDatabase(appContext)
             val defaultTemplate = database.todoTemplateDao().getDefaultTemplate()
             if (defaultTemplate != null) {
                 prefs.activeBoilerId = defaultTemplate.id
@@ -150,7 +156,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun resetDailyTasks() = viewModelScope.launch(Dispatchers.IO) {
-        AppDatabase.getDatabase(getApplication()).todoItemDao().resetDailyTasks()
+        database.todoItemDao().resetDailyTasks()
+        refreshTodayList()
+    }
+
+    fun refreshTodayList() {
+        logicalDayTrigger.postValue(System.currentTimeMillis())
     }
 
     fun insert(todoItem: TodoItem) = viewModelScope.launch(Dispatchers.IO) {
@@ -158,7 +169,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.dailyStatsAddedCount++
         
         if (todoItem.type == TodoType.DAILY && prefs.activeBoilerId != -1L) {
-            val database = AppDatabase.getDatabase(appContext)
             database.todoTemplateDao().insertTemplateItem(TodoTemplateItem(
                 templateId = prefs.activeBoilerId,
                 task = todoItem.task,
@@ -190,7 +200,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         repository.update(updatedItem)
 
         if (updatedItem.type == TodoType.DAILY && prefs.activeBoilerId != -1L) {
-            val database = AppDatabase.getDatabase(appContext)
             database.todoTemplateDao().updateDailyTaskInTemplate(
                 templateId = prefs.activeBoilerId,
                 oldTask = oldItem.task,
@@ -228,7 +237,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.dailyStatsDeletedCount++
         
         if (todoItem.type == TodoType.DAILY && prefs.activeBoilerId != -1L) {
-            val database = AppDatabase.getDatabase(appContext)
             database.todoTemplateDao().deleteDailyTaskFromTemplate(prefs.activeBoilerId, todoItem.task)
         }
 
@@ -238,7 +246,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteAllTodoItems() = viewModelScope.launch(Dispatchers.IO) {
         repository.deleteAll()
         
-        val database = AppDatabase.getDatabase(appContext)
         val templateDao = database.todoTemplateDao()
         
         // Delete all templates
@@ -313,7 +320,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         
         if (prefs.activeBoilerId == template.id) {
             // Switch back to Default if active one is deleted
-            val defaultTemplate = AppDatabase.getDatabase(appContext).todoTemplateDao().getDefaultTemplate()
+            val defaultTemplate = database.todoTemplateDao().getDefaultTemplate()
             if (defaultTemplate != null) {
                 applyTemplate(defaultTemplate.id)
             } else {
@@ -354,13 +361,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 when (appModel) {
                     is AppModel.PinnedShortcut -> launchShortcut(appModel)
                     is AppModel.App ->
-                        launchApp(appPackage = appModel.appPackage, activityName = appModel.activityClassName, user = appModel.user)
+                        launchApp(appModel)
                 }
             }
 
             Constants.FLAG_HIDDEN_APPS -> {
                 if (appModel is AppModel.App) {
-                    launchApp(appPackage = appModel.appPackage, activityName = appModel.activityClassName, user = appModel.user)
+                    launchApp(appModel)
                 }
             }
 
@@ -379,6 +386,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             launcher.getShortcuts(query, appModel.user)?.find { it.id == appModel.shortcutId }
                 ?.let { shortcut ->
+                    EventLogger.log(appContext, LogEvent.AppLaunched(
+                        packageName = appModel.appPackage,
+                        activity = null,
+                        userHandle = appModel.user.toString(),
+                        renamedLabelUsed = prefs.getAppRenameLabel(appModel.shortcutId).isNotEmpty(),
+                        isHidden = false
+                    ))
                     launcher.startShortcut(shortcut, null, null)
                 }
         }
@@ -477,10 +491,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun launchApp(appPackage: String, activityName: String?, user: UserHandle) {
+    fun launchApp(appModel: AppModel.App) {
         val launcher = appContext.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
-        val componentName = ComponentName(appPackage, activityName.toString())
-        launcher.startMainActivity(componentName, user, null, null)
+        val componentName = ComponentName(appModel.appPackage, appModel.activityClassName.toString())
+        
+        EventLogger.log(appContext, LogEvent.AppLaunched(
+            packageName = appModel.appPackage,
+            activity = appModel.activityClassName,
+            userHandle = appModel.user.toString(),
+            renamedLabelUsed = prefs.getAppRenameLabel(appModel.appPackage).isNotEmpty(),
+            isHidden = appModel.isHidden
+        ))
+
+        launcher.startMainActivity(componentName, appModel.user, null, null)
     }
 
     fun checkIsCrimsonDefault() {
@@ -490,6 +513,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateHomeAlignment(alignment: Int) {
         prefs.homeAlignment = alignment
         homeAppAlignment.postValue(alignment)
+        EventLogger.log(appContext, LogEvent.SettingsChanged("home_alignment", alignment))
     }
 
     fun getTodayScreenTime() {

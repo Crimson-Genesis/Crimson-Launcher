@@ -31,6 +31,8 @@ import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
 import app.olauncher.data.TodoItem
 import app.olauncher.databinding.FragmentHomeBinding
+import app.olauncher.helper.EventLogger
+import app.olauncher.helper.LogEvent
 import app.olauncher.helper.appUsagePermissionGranted
 import app.olauncher.helper.dpToPx
 import app.olauncher.helper.expandNotificationDrawer
@@ -233,7 +235,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
             override fun onSwipeUp() {
                 super.onSwipeUp()
                 if (!binding.checklist.canScrollVertically(1)) {
-                    attemptShowAppList()
+                    attemptShowAppList(source = "gesture")
                 }
             }
 
@@ -257,7 +259,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         })
     }
 
-    private fun attemptShowAppList() {
+    private fun attemptShowAppList(source: String) {
         if (prefs.hardcoreMode) {
             val tasks = viewModel.todayTodoItems.value
             if (tasks != null && tasks.any { !it.isCompleted }) {
@@ -265,20 +267,26 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                 return
             }
         }
-        showAppList(Constants.FLAG_LAUNCH_APP)
+        showAppList(Constants.FLAG_LAUNCH_APP, source)
     }
 
-    private fun showAppList(flag: Int) {
+    private fun showAppList(flag: Int, source: String) {
         findNavController().navigate(
             R.id.action_mainFragment_to_appListFragment,
-            bundleOf(Constants.Key.FLAG to flag)
+            bundleOf(
+                Constants.Key.FLAG to flag,
+                "source" to source
+            )
         )
     }
 
     private fun swipeDownAction() {
         when (prefs.swipeDownAction) {
             Constants.SwipeDownAction.NOTIFICATIONS -> expandNotificationDrawer(requireContext())
-            Constants.SwipeDownAction.SEARCH -> openSearch(requireContext())
+            Constants.SwipeDownAction.SEARCH -> {
+                EventLogger.log(requireContext(), LogEvent.DrawerOpened("swipe_down", 0, 0))
+                openSearch(requireContext())
+            }
         }
     }
 

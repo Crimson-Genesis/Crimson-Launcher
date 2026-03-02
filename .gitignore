@@ -1,18 +1,72 @@
-*.iml
-*.jks
-.gradle
-/local.properties
-/.idea/*
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-/app/release
-.externalNativeBuild
-.cxx
-google-services.json
+# Ignore everything by default.
+/*
+
+# Keep core project files.
+!.gitignore
+!LICENSE
+!README.md
+!build.gradle
+!settings.gradle
+!gradle.properties
+!gradlew
+!gradlew.bat
+
+# Keep Gradle wrapper and version catalog.
+!gradle/
+!gradle/libs.versions.toml
+!gradle/wrapper/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# Keep app source.
+!app/
+!app/.gitignore
+!app/build.gradle
+!app/proguard-rules.pro
+!app/src/
+!app/src/**
+
+# Keep fastlane metadata.
+!fastlane/
+!fastlane/**
+
+# Keep project content folders.
+!docs/
+!docs/**
+!photos/
+!photos/**
+!release/
+!release/**
+
+# Re-ignore generated/local files anywhere.
+**/.DS_Store
+**/.idea/
+**/*.iml
+**/.gradle/
+**/.gradle-local/
+**/.kotlin/
+**/build/
+**/captures/
+**/.externalNativeBuild/
+**/.cxx/
+**/local.properties
+**/*.jks
+**/*.keystore
+**/keystore.properties
+**/google-services.json
+
+# Local scratch files.
+error
+prompt*.txt
+
+# Keep empty folder placeholders.
+!docs/.gitkeep
+!photos/.gitkeep
+!release/.gitkeep
+
+# Never commit release artifacts.
+release/*.apk
+release/*.aab
+release/*.apks
+release/*.idsig
+release/*.zip

@@ -50,6 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     private var isPickerActive = false
+    private var onCreateTimestamp: Long = 0
 
     private val backupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         isPickerActive = false
@@ -104,6 +105,7 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 Log.e("Backup", "Direct backup failed", e)
+                EventLogger.log(this@MainActivity, LogEvent.BackupFailed(e.message ?: "Unknown error"))
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@MainActivity, "Backup failed: ${e.message}", Toast.LENGTH_LONG).show()
                 }
@@ -119,6 +121,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 if (json.isNullOrBlank()) {
                     Toast.makeText(this@MainActivity, "File is empty or could not be read", Toast.LENGTH_SHORT).show()
+                    EventLogger.log(this@MainActivity, LogEvent.RestoreFailed("File is empty or could not be read"))
                     return@launch
                 }
 
@@ -126,6 +129,7 @@ class MainActivity : AppCompatActivity() {
 
                 if (settings == null && items == null && templates == null) {
                     Toast.makeText(this@MainActivity, "Invalid backup file", Toast.LENGTH_SHORT).show()
+                    EventLogger.log(this@MainActivity, LogEvent.RestoreFailed("Invalid backup file"))
                     return@launch
                 }
 
@@ -156,6 +160,7 @@ class MainActivity : AppCompatActivity() {
                 recreate()
             } catch (e: Exception) {
                 Log.e("Restore", "Restore error", e)
+                EventLogger.log(this@MainActivity, LogEvent.RestoreFailed(e.message ?: "Unknown error"))
                 Toast.makeText(this@MainActivity, "Restore failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
             }
         }
@@ -188,14 +193,15 @@ class MainActivity : AppCompatActivity() {
         restoreLauncher.launch(arrayOf("application/json"))
     }
 
-    override fun attachBaseContext(context: Context) {
-        val newConfig = Configuration(context.resources.configuration)
-        newConfig.fontScale = Prefs(context).textSizeScale
-        applyOverrideConfiguration(newConfig)
+    override fun attachBaseContext(newBase: Context) {
+        val config = Configuration(newBase.resources.configuration)
+        config.fontScale = Prefs(newBase).textSizeScale
+        val context = newBase.createConfigurationContext(config)
         super.attachBaseContext(context)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        onCreateTimestamp = System.currentTimeMillis()
         prefs = Prefs(this)
         if (isEinkDisplay()) prefs.appTheme = AppCompatDelegate.MODE_NIGHT_NO
         AppCompatDelegate.setDefaultNightMode(prefs.appTheme)
@@ -338,6 +344,15 @@ class MainActivity : AppCompatActivity() {
     override fun onUserLeaveHint() {
         backToHomeScreen()
         super.onUserLeaveHint()
+    }
+
+    override fun onDestroy() {
+        EventLogger.log(this, LogEvent.AppClosed(System.currentTimeMillis() - onCreateTimestamp))
+        super.onDestroy()
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
     }
 
     override fun onNewIntent(intent: Intent?) {

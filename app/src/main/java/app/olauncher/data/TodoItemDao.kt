@@ -36,8 +36,12 @@ interface TodoItemDao {
     @Query("SELECT * FROM todo_items WHERE type = 'DAILY'")
     fun getAllDailyTasks(): LiveData<List<TodoItem>>
 
-    @Query("SELECT * FROM todo_items WHERE type = 'DAILY' OR (type = 'TIMED' AND date(dueDate / 1000, 'unixepoch', 'localtime') = date('now', 'localtime'))")
-    fun getTodayTodoItems(): LiveData<List<TodoItem>>
+    @Query("""
+        SELECT * FROM todo_items 
+        WHERE (type = 'DAILY' AND (daysOfWeek IS NULL OR daysOfWeek = '' OR daysOfWeek LIKE '%' || :dayOfWeek || '%'))
+        OR (type = 'TIMED' AND :logicalDate BETWEEN date(dueDate / 1000, 'unixepoch', 'localtime') AND date(COALESCE(toDate, dueDate) / 1000, 'unixepoch', 'localtime'))
+    """)
+    fun getTodayTodoItems(logicalDate: String, dayOfWeek: String): LiveData<List<TodoItem>>
 
     @Query("SELECT * FROM todo_items WHERE isCompleted = 1 AND type != 'DAILY'")
     fun getCompletedTodoItems(): LiveData<List<TodoItem>>

@@ -5,8 +5,10 @@ import androidx.lifecycle.map
 
 class TodoItemRepository(private val todoItemDao: TodoItemDao) {
 
-    val todayTodoItems: LiveData<List<TodoItem>> = todoItemDao.getTodayTodoItems().map { 
-        TodoSorter.sortToday(it) 
+    fun getTodayTodoItems(logicalDate: String, dayOfWeek: String): LiveData<List<TodoItem>> {
+        return todoItemDao.getTodayTodoItems(logicalDate, dayOfWeek).map { 
+            TodoSorter.sortToday(it) 
+        }
     }
     
     val completedTodoItems: LiveData<List<TodoItem>> = todoItemDao.getCompletedTodoItems().map { 

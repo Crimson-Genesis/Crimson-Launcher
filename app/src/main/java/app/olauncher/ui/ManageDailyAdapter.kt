@@ -51,9 +51,18 @@ class ManageDailyAdapter(
                 // Restore showing the full string stored in the database (e.g. "Mon Tue")
                 info.append(item.daysOfWeek)
             }
-            if (item.time != null) {
+            
+            val timeStr = if (item.time != null && item.toTime != null) {
+                "${item.time} - ${item.toTime}"
+            } else if (item.time != null) {
+                item.time
+            } else {
+                null
+            }
+
+            if (timeStr != null) {
                 if (info.isNotEmpty()) info.append(" | ")
-                info.append(item.time)
+                info.append(timeStr)
             }
             tvTaskInfo.text = info.toString()
 

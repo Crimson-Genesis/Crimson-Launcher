@@ -17,6 +17,7 @@ import app.olauncher.data.Prefs
 import app.olauncher.data.TodoItem
 import app.olauncher.data.TodoType
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -27,9 +28,19 @@ class ChecklistAdapter(
     private val onCheckedChangeListener: (TodoItem, Boolean) -> Unit
 ) : RecyclerView.Adapter<ChecklistAdapter.ViewHolder>() {
 
+    companion object {
+        private const val VIEW_TYPE_NORMAL = 0
+        private const val VIEW_TYPE_LARGE = 1
+    }
+
+    override fun getItemViewType(position: Int): Int {
+        return if (prefs.textSizeScale >= 0.9f) VIEW_TYPE_LARGE else VIEW_TYPE_NORMAL
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val layoutRes = if (viewType == VIEW_TYPE_LARGE) R.layout.item_checklist_large else R.layout.item_checklist
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_checklist, parent, false)
+            .inflate(layoutRes, parent, false)
         return ViewHolder(view)
     }
 
@@ -58,20 +69,60 @@ class ChecklistAdapter(
             tvTask.setTextSize(TypedValue.COMPLEX_UNIT_PX, (textSizeInPx * prefs.textSizeScale) + threeSp)
             tvTime.setTextSize(TypedValue.COMPLEX_UNIT_PX, (textSizeInPx * prefs.textSizeScale) + threeSp)
 
+            tvTime.visibility = View.VISIBLE
             when (item.type) {
                 TodoType.DAILY -> {
-                    if (item.time != null) {
-                        tvTime.visibility = View.VISIBLE
-                        tvTime.text = item.time
+                    val fromTime = item.time
+                    val toTime = item.toTime
+                    if (fromTime != null && toTime != null) {
+                        tvTime.text = "$fromTime - $toTime"
+                    } else if (fromTime != null) {
+                        tvTime.text = fromTime
                     } else {
                         tvTime.visibility = View.GONE
                     }
                 }
                 TodoType.TIMED -> {
-                    if (item.dueDate != null) {
-                        tvTime.visibility = View.VISIBLE
-                        val sdf = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault())
-                        tvTime.text = sdf.format(Date(item.dueDate))
+                    val fromDate = item.dueDate
+                    val toDate = item.toDate
+                    val fromTime = item.time
+                    val toTime = item.toTime
+                    
+                    val dateSdf = SimpleDateFormat("MMM d", Locale.getDefault())
+                    val timeSdf = SimpleDateFormat("h:mm a", Locale.getDefault())
+                    val fullSdf = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault())
+                    
+                    if (fromDate != null) {
+                        val fromCal = Calendar.getInstance().apply { timeInMillis = fromDate }
+                        
+                        if (toDate != null) {
+                            val toCal = Calendar.getInstance().apply { timeInMillis = toDate }
+                            val isSameDay = fromCal.get(Calendar.YEAR) == toCal.get(Calendar.YEAR) &&
+                                            fromCal.get(Calendar.DAY_OF_YEAR) == toCal.get(Calendar.DAY_OF_YEAR)
+                            
+                            if (isSameDay) {
+                                // Same day range: "Date | FromTime - ToTime"
+                                val dateStr = dateSdf.format(fromCal.time)
+                                val fTime = fromTime ?: timeSdf.format(fromCal.time)
+                                val tTime = toTime ?: timeSdf.format(toCal.time)
+                                tvTime.text = "$dateStr | $fTime - $tTime"
+                            } else {
+                                // Different days: "From FullDate - To FullDate"
+                                val fStr = fullSdf.format(fromCal.time)
+                                val tStr = fullSdf.format(toCal.time)
+                                tvTime.text = "$fStr - $tStr"
+                            }
+                        } else {
+                            // No to-date, but maybe to-time (same day)
+                            if (toTime != null) {
+                                val dateStr = dateSdf.format(fromCal.time)
+                                val fTime = fromTime ?: timeSdf.format(fromCal.time)
+                                tvTime.text = "$dateStr | $fTime - $toTime"
+                            } else {
+                                // From only: "FullDate"
+                                tvTime.text = fullSdf.format(fromCal.time)
+                            }
+                        }
                     } else {
                         tvTime.visibility = View.GONE
                     }
