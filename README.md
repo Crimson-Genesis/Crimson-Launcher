@@ -19,11 +19,11 @@ Crimson Launcher is a forked version of Olauncher with integrated daily task man
 
 | Home Page | Right Page | Settings Page |
 |-----------|------------|---------------|
-| <img src="./photos/1_home_page.jpeg" width="150"> | <img src="./photos/2_right_page.jpeg" width="150"> | <img src="./photos/3_settings_page.jpeg" width="150"> |
+| <img src="./photos/1_home_page.jpeg" width="250"> | <img src="./photos/2_right_page.jpeg" width="250"> | <img src="./photos/3_settings_page.jpeg" width="250"> |
 
 | Task Management Page | App Drawer |
 |----------------------|------------|
-| <img src="./photos/4_left_page.jpeg" width="150"> | <img src="./photos/11_app_drawer.jpeg" width="150"> |
+| <img src="./photos/4_left_page.jpeg" width="250"> | <img src="./photos/11_app_drawer.jpeg" width="250"> |
 
 ---
 
