@@ -2,19 +2,19 @@ package app.olauncher.ui
 
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import app.olauncher.MainViewModel
 import app.olauncher.data.TodoItem
 import app.olauncher.databinding.DialogTaskOptionsBinding
 import app.olauncher.helper.dpToPx
+import kotlinx.coroutines.launch
 
 class TaskOptionsDialogFragment : DialogFragment() {
 
@@ -22,25 +22,30 @@ class TaskOptionsDialogFragment : DialogFragment() {
     private val binding get() = _binding!!
 
     private lateinit var viewModel: MainViewModel
-    private var todoItem: TodoItem? = null
+    private var todoItemId: Long = -1
     private var showEditOption: Boolean = true
 
     companion object {
-        private var currentTodoItem: TodoItem? = null
-        private var currentShowEdit: Boolean = true
+        private const val ARG_TODO_ID = "todo_id"
+        private const val ARG_SHOW_EDIT = "show_edit"
 
         fun newInstance(todoItem: TodoItem, showEdit: Boolean = true): TaskOptionsDialogFragment {
             val fragment = TaskOptionsDialogFragment()
-            currentTodoItem = todoItem
-            currentShowEdit = showEdit
+            val args = Bundle().apply {
+                putLong(ARG_TODO_ID, todoItem.id)
+                putBoolean(ARG_SHOW_EDIT, showEdit)
+            }
+            fragment.arguments = args
             return fragment
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        todoItem = currentTodoItem
-        showEditOption = currentShowEdit
+        arguments?.let {
+            todoItemId = it.getLong(ARG_TODO_ID)
+            showEditOption = it.getBoolean(ARG_SHOW_EDIT)
+        }
     }
 
     override fun onCreateView(
@@ -58,19 +63,43 @@ class TaskOptionsDialogFragment : DialogFragment() {
 
         if (!showEditOption) {
             binding.btnEditOption.visibility = View.GONE
-            if (binding.root.childCount > 1) {
-                binding.root.getChildAt(1).visibility = View.GONE
+            // Hide the first separator
+            binding.root.getChildAt(1).visibility = View.GONE
+        }
+
+        // Hide "Copy" if not triggered from TodoFragment (left page)
+        if (parentFragment !is TodoFragment) {
+            binding.btnCopyOption.visibility = View.GONE
+            // Hide the separator above Copy
+            if (showEditOption) binding.root.getChildAt(3).visibility = View.GONE
+        }
+
+        binding.btnEditOption.setOnClickListener {
+            lifecycleScope.launch {
+                val item = viewModel.getTodoItemById(todoItemId)
+                item?.let {
+                    EditTaskDialogFragment.newInstance(it).show(parentFragmentManager, "edit_task")
+                }
+                dismiss()
             }
         }
 
-        todoItem?.let { item ->
-            binding.btnEditOption.setOnClickListener {
-                EditTaskDialogFragment.newInstance(item).show(parentFragmentManager, "edit_task")
+        binding.btnCopyOption.setOnClickListener {
+            lifecycleScope.launch {
+                val item = viewModel.getTodoItemById(todoItemId)
+                item?.let {
+                    viewModel.copyTaskEvent.postValue(it)
+                }
                 dismiss()
             }
+        }
 
-            binding.btnDeleteOption.setOnClickListener {
-                viewModel.delete(item)
+        binding.btnDeleteOption.setOnClickListener {
+            lifecycleScope.launch {
+                val item = viewModel.getTodoItemById(todoItemId)
+                item?.let {
+                    viewModel.delete(it)
+                }
                 dismiss()
             }
         }

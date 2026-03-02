@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import app.olauncher.MainViewModel
 import app.olauncher.R
+import app.olauncher.data.TodoDateTimeHelper
 import app.olauncher.data.TodoItem
 import app.olauncher.data.TodoType
 import app.olauncher.databinding.FragmentTodoBinding
@@ -81,6 +82,10 @@ class TodoFragment : Fragment() {
 
         viewModel.activeBoilerName.observe(viewLifecycleOwner) { name ->
             binding.tvDailyTasksHeader.text = getString(R.string.all_daily_tasks_header, name)
+        }
+
+        viewModel.copyTaskEvent.observe(viewLifecycleOwner) { item ->
+            copyToForm(item)
         }
 
         updateFieldsEnablement()
@@ -147,6 +152,43 @@ class TodoFragment : Fragment() {
         }
 
         updateFieldsEnablement()
+    }
+
+    fun copyToForm(item: TodoItem) {
+        exitEditMode()
+        binding.etTodo.setText(item.task)
+        
+        // Days of week
+        val days = item.daysOfWeek?.split(" ") ?: emptyList()
+        for (button in binding.llDaily.children) {
+            if (button is Button) {
+                val dayName = dayMapping[button.id]
+                button.isSelected = days.contains(dayName)
+            }
+        }
+
+        // From Date/Time
+        item.dueDate?.let {
+            fromCalendar.timeInMillis = it
+            updateDateText(isFrom = true)
+            updateTimeText(isFrom = true)
+        } ?: run {
+            binding.tvDate.text = "From Date"
+            binding.tvTime.text = item.time ?: "From Time"
+        }
+
+        // To Date/Time
+        item.toDate?.let {
+            toCalendar.timeInMillis = it
+            updateDateText(isFrom = false)
+            updateTimeText(isFrom = false)
+        } ?: run {
+            binding.tvToDate.text = "To Date"
+            binding.tvToTime.text = item.toTime ?: "To Time"
+        }
+
+        updateFieldsEnablement()
+        context?.showToast("Task copied to form")
     }
 
     private fun exitEditMode() {
@@ -244,6 +286,17 @@ class TodoFragment : Fragment() {
                 calendar.set(Calendar.YEAR, year)
                 calendar.set(Calendar.MONTH, month)
                 calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                if (isFrom) {
+                    calendar.set(Calendar.HOUR_OF_DAY, 0)
+                    calendar.set(Calendar.MINUTE, 0)
+                    calendar.set(Calendar.SECOND, 0)
+                    calendar.set(Calendar.MILLISECOND, 0)
+                } else {
+                    calendar.set(Calendar.HOUR_OF_DAY, 23)
+                    calendar.set(Calendar.MINUTE, 59)
+                    calendar.set(Calendar.SECOND, 59)
+                    calendar.set(Calendar.MILLISECOND, 999)
+                }
                 updateDateText(isFrom)
                 updateFieldsEnablement()
             },
@@ -261,6 +314,8 @@ class TodoFragment : Fragment() {
             { _, hourOfDay, minute ->
                 calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
                 calendar.set(Calendar.MINUTE, minute)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
                 updateTimeText(isFrom)
                 updateFieldsEnablement()
             },
@@ -362,27 +417,6 @@ class TodoFragment : Fragment() {
             return
         }
 
-        if (isDateSet && isToDateSet) {
-            val fromDate = Calendar.getInstance().apply { timeInMillis = fromCalendar.timeInMillis }.apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
-            val toDate = Calendar.getInstance().apply { timeInMillis = toCalendar.timeInMillis }.apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
-            if (fromDate.after(toDate)) {
-                context?.showToast("'From Date' cannot be after 'To Date'")
-                return
-            }
-        }
-
-        if (isTimeSet && isToTimeSet) {
-            val fromMinutes = fromCalendar.get(Calendar.HOUR_OF_DAY) * 60 + fromCalendar.get(Calendar.MINUTE)
-            val toMinutes = toCalendar.get(Calendar.HOUR_OF_DAY) * 60 + toCalendar.get(Calendar.MINUTE)
-            
-            // If it's the same day or no date (daily), check time order
-            val isSameDay = !isDateSet || (isDateSet && isToDateSet && fromCalendar.get(Calendar.YEAR) == toCalendar.get(Calendar.YEAR) && fromCalendar.get(Calendar.DAY_OF_YEAR) == toCalendar.get(Calendar.DAY_OF_YEAR))
-            if (isSameDay && fromMinutes > toMinutes) {
-                context?.showToast("'From Time' cannot be after 'To Time' on the same day")
-                return
-            }
-        }
-
         val type: TodoType
         var daysOfWeek: String? = null
         var dueDate: Long? = null
@@ -412,6 +446,27 @@ class TodoFragment : Fragment() {
             type = TodoType.TIMELESS
         }
 
+        val tempItem = TodoItem(
+            task = task,
+            type = type,
+            daysOfWeek = daysOfWeek,
+            dueDate = dueDate,
+            toDate = toDate,
+            time = time,
+            toTime = toTime
+        )
+
+        // Validate absolute range ONLY if an explicit end exists
+        if (TodoDateTimeHelper.hasExplicitEnd(tempItem)) {
+            val startAt = TodoDateTimeHelper.getStartAtMillis(tempItem)
+            val endAt = TodoDateTimeHelper.getEndAtMillis(tempItem)
+            
+            if (startAt != null && endAt != null && endAt <= startAt) {
+                context?.showToast("End time must be after start time")
+                return
+            }
+        }
+
         if (editingItem != null) {
             val updatedItem = editingItem!!.copy(
                 task = task,
@@ -425,16 +480,7 @@ class TodoFragment : Fragment() {
             viewModel.update(updatedItem)
             exitEditMode()
         } else {
-            val todoItem = TodoItem(
-                task = task,
-                type = type,
-                daysOfWeek = daysOfWeek,
-                dueDate = dueDate,
-                time = time,
-                toDate = toDate,
-                toTime = toTime
-            )
-            viewModel.insert(todoItem)
+            viewModel.insert(tempItem)
             resetFields()
         }
     }

@@ -56,6 +56,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val showDialog = SingleLiveEvent<String>()
     val checkForMessages = SingleLiveEvent<Unit?>()
     val resetLauncherLiveData = SingleLiveEvent<Unit?>()
+    val copyTaskEvent = SingleLiveEvent<TodoItem>()
 
     // Caching the app list
     private var cachedAppList: List<AppModel>? = null
@@ -155,6 +156,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         repository.getAllTodoItemsSync()
     }
 
+    suspend fun getTodoItemById(id: Long): TodoItem? = withContext(Dispatchers.IO) {
+        repository.getById(id)
+    }
+
     fun resetDailyTasks() = viewModelScope.launch(Dispatchers.IO) {
         database.todoItemDao().resetDailyTasks()
         refreshTodayList()
@@ -174,7 +179,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 task = todoItem.task,
                 type = todoItem.type,
                 time = todoItem.time,
-                daysOfWeek = todoItem.daysOfWeek
+                daysOfWeek = todoItem.daysOfWeek,
+                toDate = todoItem.toDate,
+                toTime = todoItem.toTime
             ))
         }
 
@@ -205,7 +212,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 oldTask = oldItem.task,
                 newTask = updatedItem.task,
                 newTime = updatedItem.time,
-                newDaysOfWeek = updatedItem.daysOfWeek
+                newDaysOfWeek = updatedItem.daysOfWeek,
+                newToDate = updatedItem.toDate,
+                newToTime = updatedItem.toTime
             )
         }
 
@@ -308,7 +317,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 type = it.type,
                 dueDate = it.dueDate,
                 time = it.time,
-                daysOfWeek = it.daysOfWeek
+                daysOfWeek = it.daysOfWeek,
+                toDate = it.toDate,
+                toTime = it.toTime
             ))
         }
         EventLogger.log(appContext, LogEvent.TemplateApplied(templateWithItems.template.name, templateWithItems.items.size))

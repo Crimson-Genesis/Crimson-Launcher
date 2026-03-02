@@ -39,7 +39,18 @@ interface TodoItemDao {
     @Query("""
         SELECT * FROM todo_items 
         WHERE (type = 'DAILY' AND (daysOfWeek IS NULL OR daysOfWeek = '' OR daysOfWeek LIKE '%' || :dayOfWeek || '%'))
-        OR (type = 'TIMED' AND :logicalDate BETWEEN date(dueDate / 1000, 'unixepoch', 'localtime') AND date(COALESCE(toDate, dueDate) / 1000, 'unixepoch', 'localtime'))
+        OR (type = 'TIMED' AND (
+            :logicalDate BETWEEN date(dueDate / 1000, 'unixepoch', 'localtime') AND date(COALESCE(toDate, dueDate) / 1000, 'unixepoch', 'localtime')
+            OR (:logicalDate = date((dueDate / 1000) + 86400, 'unixepoch', 'localtime') 
+                AND toDate IS NULL 
+                AND time IS NOT NULL 
+                AND toTime IS NOT NULL 
+                AND (
+                    (CAST(strftime('%H', time) AS INTEGER) * 60 + CAST(strftime('%M', time) AS INTEGER)) > 
+                    (CAST(strftime('%H', toTime) AS INTEGER) * 60 + CAST(strftime('%M', toTime) AS INTEGER))
+                )
+            )
+        ))
     """)
     fun getTodayTodoItems(logicalDate: String, dayOfWeek: String): LiveData<List<TodoItem>>
 

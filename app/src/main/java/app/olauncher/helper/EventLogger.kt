@@ -9,6 +9,7 @@ import app.olauncher.BuildConfig
 import app.olauncher.MainActivity
 import app.olauncher.R
 import app.olauncher.data.Prefs
+import app.olauncher.data.TodoDateTimeHelper
 import app.olauncher.data.TodoItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -94,25 +95,25 @@ object EventLogger {
 
         when (event) {
             is LogEvent.TaskAdded -> {
-                json.put("todo", todoToJson(event.todo))
+                json.put("todo", todoToJson(event.todo, prefs))
                 json.put("daily_stats_snapshot", snapshotToJson(event.snapshot))
             }
             is LogEvent.TaskDeleted -> {
-                json.put("todo", todoToJson(event.todo))
+                json.put("todo", todoToJson(event.todo, prefs))
                 event.reason?.let { json.put("reason", it) }
                 json.put("daily_stats_snapshot", snapshotToJson(event.snapshot))
             }
             is LogEvent.TaskCompleted -> {
-                json.put("todo", todoToJson(event.todo))
+                json.put("todo", todoToJson(event.todo, prefs))
                 json.put("daily_stats_snapshot", snapshotToJson(event.snapshot))
             }
             is LogEvent.TaskUncompleted -> {
-                json.put("todo", todoToJson(event.todo))
+                json.put("todo", todoToJson(event.todo, prefs))
                 json.put("daily_stats_snapshot", snapshotToJson(event.snapshot))
             }
             is LogEvent.TaskEdited -> {
-                json.put("old_todo", todoToJson(event.old))
-                json.put("todo", todoToJson(event.updated))
+                json.put("old_todo", todoToJson(event.old, prefs))
+                json.put("todo", todoToJson(event.updated, prefs))
                 json.put("changed_fields", JSONArray(event.changedFields))
                 json.put("daily_stats_snapshot", snapshotToJson(event.snapshot))
             }
@@ -224,7 +225,7 @@ object EventLogger {
         is LogEvent.TemplateDeleted -> "template_deleted"
     }
 
-    private fun todoToJson(todo: TodoItem): JSONObject = JSONObject().apply {
+    private fun todoToJson(todo: TodoItem, prefs: Prefs): JSONObject = JSONObject().apply {
         put("id", todo.id)
         put("task", todo.task)
         put("type", todo.type.name)
@@ -241,6 +242,15 @@ object EventLogger {
         }
         put("is_completed", todo.isCompleted)
         put("completed_at", todo.completedAt)
+        
+        // Overnight/Range info
+        put("is_overnight", todo.isOvernight())
+        val startAt = TodoDateTimeHelper.getStartAtMillis(todo, prefs = prefs)
+        val endAt = TodoDateTimeHelper.getEndAtMillis(todo, prefs = prefs)
+        put("computed_start_ts", startAt)
+        put("computed_end_ts", endAt)
+        startAt?.let { put("computed_start_human", isoFormat.format(Date(it))) }
+        endAt?.let { put("computed_end_human", isoFormat.format(Date(it))) }
     }
 
     private fun snapshotToJson(s: DailySnapshot): JSONObject = JSONObject().apply {

@@ -23,6 +23,22 @@
         android:alpha="0.1" />
 
     <TextView
+        android:id="@+id/btnCopyOption"
+        style="@style/TextLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="Copy"
+        android:gravity="center" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginHorizontal="16dp"
+        android:background="?attr/primaryColor"
+        android:alpha="0.1" />
+
+    <TextView
         android:id="@+id/btnDeleteOption"
         style="@style/TextLarge"
         android:layout_width="match_parent"

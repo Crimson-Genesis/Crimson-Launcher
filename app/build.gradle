@@ -41,8 +41,8 @@ android {
         applicationId "app.crimson.launcher"
         minSdkVersion 24
         targetSdkVersion 35
-        versionCode 4
-        versionName "1.2"
+        versionCode 5
+        versionName "1.3"
 
         resourceConfigurations += ["en", "ar", "de", "es-rES", "es-rUS", "fr", "he", "hr", "hu", "in", "it", "ja", "nl", "pl", "pt-rBR", "ru-rRU", "sv", "tr", "uk", "zh"]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

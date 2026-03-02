@@ -53,8 +53,8 @@ interface TodoTemplateDao {
     @Query("DELETE FROM todo_templates")
     suspend fun deleteAllTemplates()
 
-    @Query("UPDATE todo_template_items SET task = :newTask, time = :newTime, daysOfWeek = :newDaysOfWeek WHERE templateId = :templateId AND task = :oldTask AND type = 'DAILY'")
-    suspend fun updateDailyTaskInTemplate(templateId: Long, oldTask: String, newTask: String, newTime: String?, newDaysOfWeek: String?)
+    @Query("UPDATE todo_template_items SET task = :newTask, time = :newTime, daysOfWeek = :newDaysOfWeek, toDate = :newToDate, toTime = :newToTime WHERE templateId = :templateId AND task = :oldTask AND type = 'DAILY'")
+    suspend fun updateDailyTaskInTemplate(templateId: Long, oldTask: String, newTask: String, newTime: String?, newDaysOfWeek: String?, newToDate: Long?, newToTime: String?)
 
     @Query("DELETE FROM todo_template_items WHERE templateId = :templateId AND task = :task AND type = 'DAILY'")
     suspend fun deleteDailyTaskFromTemplate(templateId: Long, task: String)

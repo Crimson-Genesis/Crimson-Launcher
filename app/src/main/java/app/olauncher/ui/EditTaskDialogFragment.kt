@@ -4,26 +4,23 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.widget.Button
 import androidx.core.view.children
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModelProvider
 import app.olauncher.MainViewModel
 import app.olauncher.R
+import app.olauncher.data.TodoDateTimeHelper
 import app.olauncher.data.TodoItem
 import app.olauncher.data.TodoType
 import app.olauncher.databinding.DialogEditTaskBinding
 import app.olauncher.helper.showToast
 import java.text.DateFormat
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Locale
 
 class EditTaskDialogFragment : DialogFragment() {
 
@@ -206,6 +203,17 @@ class EditTaskDialogFragment : DialogFragment() {
                 calendar.set(Calendar.YEAR, year)
                 calendar.set(Calendar.MONTH, month)
                 calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                if (isFrom) {
+                    calendar.set(Calendar.HOUR_OF_DAY, 0)
+                    calendar.set(Calendar.MINUTE, 0)
+                    calendar.set(Calendar.SECOND, 0)
+                    calendar.set(Calendar.MILLISECOND, 0)
+                } else {
+                    calendar.set(Calendar.HOUR_OF_DAY, 23)
+                    calendar.set(Calendar.MINUTE, 59)
+                    calendar.set(Calendar.SECOND, 59)
+                    calendar.set(Calendar.MILLISECOND, 999)
+                }
                 updateDateText(isFrom)
                 updateDatePickerState()
             },
@@ -223,6 +231,8 @@ class EditTaskDialogFragment : DialogFragment() {
             { _, hourOfDay, minute ->
                 calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
                 calendar.set(Calendar.MINUTE, minute)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
                 updateTimeText(isFrom)
                 updateDatePickerState()
             },
@@ -265,27 +275,6 @@ class EditTaskDialogFragment : DialogFragment() {
             return
         }
 
-        if (isDateSet && isToDateSet) {
-            val fromDate = Calendar.getInstance().apply { timeInMillis = fromCalendar.timeInMillis }.apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
-            val toDate = Calendar.getInstance().apply { timeInMillis = toCalendar.timeInMillis }.apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
-            if (fromDate.after(toDate)) {
-                context?.showToast("'From Date' cannot be after 'To Date'")
-                return
-            }
-        }
-
-        if (isTimeSet && isToTimeSet) {
-            val fromMinutes = fromCalendar.get(Calendar.HOUR_OF_DAY) * 60 + fromCalendar.get(Calendar.MINUTE)
-            val toMinutes = toCalendar.get(Calendar.HOUR_OF_DAY) * 60 + toCalendar.get(Calendar.MINUTE)
-            
-            // If it's the same day or no date (daily), check time order
-            val isSameDay = !isDateSet || (isDateSet && isToDateSet && fromCalendar.get(Calendar.YEAR) == toCalendar.get(Calendar.YEAR) && fromCalendar.get(Calendar.DAY_OF_YEAR) == toCalendar.get(Calendar.DAY_OF_YEAR))
-            if (isSameDay && fromMinutes > toMinutes) {
-                context?.showToast("'From Time' cannot be after 'To Time' on the same day")
-                return
-            }
-        }
-
         val type: TodoType
         var daysOfWeek: String? = null
         var dueDate: Long? = null
@@ -324,6 +313,17 @@ class EditTaskDialogFragment : DialogFragment() {
             toDate = toDate,
             toTime = toTime
         )
+
+        // Validate absolute range using central helper
+        if (TodoDateTimeHelper.hasExplicitEnd(updatedItem)) {
+            val startAt = TodoDateTimeHelper.getStartAtMillis(updatedItem)
+            val endAt = TodoDateTimeHelper.getEndAtMillis(updatedItem)
+            
+            if (startAt != null && endAt != null && endAt <= startAt) {
+                context?.showToast("End time must be after start time")
+                return
+            }
+        }
 
         viewModel.update(updatedItem)
         dismiss()
