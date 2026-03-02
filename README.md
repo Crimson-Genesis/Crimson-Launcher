@@ -19,11 +19,11 @@ Crimson Launcher is a forked version of Olauncher with integrated daily task man
 
 | Home Page | Right Page | Settings Page |
 |-----------|------------|---------------|
-| ![Home Page](./photos/1_home_page.jpeg) | ![Right Page](./photos/2_right_page.jpeg) | ![Settings Page](./photos/3_settings_page.jpeg) |
+| <img src="./photos/1_home_page.jpeg" width="150"> | <img src="./photos/2_right_page.jpeg" width="150"> | <img src="./photos/3_settings_page.jpeg" width="150"> |
 
 | Task Management Page | App Drawer |
 |----------------------|------------|
-| ![Left Page](./photos/4_left_page.jpeg) | ![App Drawer](./photos/11_app_drawer.jpeg) |
+| <img src="./photos/4_left_page.jpeg" width="150"> | <img src="./photos/11_app_drawer.jpeg" width="150"> |
 
 ---
 
@@ -57,7 +57,7 @@ Home → Right Page → Settings → Task Management → Home
 
 The Home Page is the main dashboard displaying your daily overview and remaining tasks.
 
-![Home Page](./photos/1_home_page.jpeg)
+<img src="./photos/1_home_page.jpeg" width="250" alt="Home Page">
 
 #### Features
 
@@ -80,11 +80,11 @@ The Home Page is the main dashboard displaying your daily overview and remaining
 
 Long-press on any task in the home page to access edit/delete options:
 
-![Edit/Delete in Home Page](./photos/7_edit-or-delete_in_home_page.jpeg)
+<img src="./photos/7_edit-or-delete_in_home_page.jpeg" width="250" alt="Edit/Delete in Home Page">
 
 The edit section allows you to modify task details:
 
-![Edit Section](./photos/8_edit_section_in_home_page.jpeg)
+<img src="./photos/8_edit_section_in_home_page.jpeg" width="250" alt="Edit Section">
 
 ---
 
@@ -92,7 +92,7 @@ The edit section allows you to modify task details:
 
 The Right Page displays timed and timeless tasks that need to be done, along with completed tasks.
 
-![Right Page](./photos/2_right_page.jpeg)
+<img src="./photos/2_right_page.jpeg" width="250" alt="Right Page">
 
 #### Sections
 
@@ -107,13 +107,13 @@ The Right Page displays timed and timeless tasks that need to be done, along wit
 
 After completing some tasks, the page looks like:
 
-![After Task Completion](./photos/9_right_after_some_tast_completed.jpeg)
+<img src="./photos/9_right_after_some_tast_completed.jpeg" width="250" alt="After Task Completion">
 
 #### Managing Completed Tasks
 
 Long-press on a completed task to delete it:
 
-![Delete Completed](./photos/10_showing_only_delete_option_of_completed_section.jpeg)
+<img src="./photos/10_showing_only_delete_option_of_completed_section.jpeg" width="250" alt="Delete Completed">
 
 ---
 
@@ -121,7 +121,7 @@ Long-press on a completed task to delete it:
 
 The Task Management Page (accessible by swiping right from Home) handles daily task creation and boiler/template management.
 
-![Task Management Page](./photos/4_left_page.jpeg)
+<img src="./photos/4_left_page.jpeg" width="250" alt="Task Management Page">
 
 #### Upper Section: Task Creation
 
@@ -150,7 +150,7 @@ This section allows you to create new Daily tasks:
 
 Press the Boiler button to access saved task templates:
 
-![Boiler Section](./photos/5_boiler_section.jpeg)
+<img src="./photos/5_boiler_section.jpeg" width="250" alt="Boiler Section">
 
 - Save current task set as a template for quick switching
 - Templates don't affect Timed or Timeless tasks
@@ -163,7 +163,7 @@ Shows all Daily tasks for the currently active boiler.
 
 **Long-press** for options:
 
-![Copy/Delete](./photos/6_copy-or-delete_in_left_page.jpeg)
+<img src="./photos/6_copy-or-delete_in_left_page.jpeg" width="250" alt="Copy/Delete">
 
 - **Copy**: Copies the task to the upper section where you can modify it and create a new task with similar settings
 - **Delete**: Removes the task
@@ -174,7 +174,7 @@ Shows all Daily tasks for the currently active boiler.
 
 The App Drawer displays all installed applications on your device.
 
-![App Drawer](./photos/11_app_drawer.jpeg)
+<img src="./photos/11_app_drawer.jpeg" width="250" alt="App Drawer">
 
 #### Features
 
@@ -200,7 +200,7 @@ Long-press any app to access:
 
 The Settings Page contains all customization options for Crimson Launcher.
 
-![Settings Page](./photos/3_settings_page.jpeg)
+<img src="./photos/3_settings_page.jpeg" width="250" alt="Settings Page">
 
 ---
 
