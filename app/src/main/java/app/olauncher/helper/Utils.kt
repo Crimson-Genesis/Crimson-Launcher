@@ -375,6 +375,8 @@ private fun serializeTodoItem(item: TodoItem): JSONObject {
         put("completedAt", item.completedAt ?: JSONObject.NULL)
         put("toDate", item.toDate ?: JSONObject.NULL)
         put("toTime", item.toTime ?: JSONObject.NULL)
+        put("originTemplateId", item.originTemplateId ?: JSONObject.NULL)
+        put("originTemplateItemId", item.originTemplateItemId ?: JSONObject.NULL)
     }
 }
 
@@ -467,7 +469,9 @@ private fun parseTodoItem(jsonObject: JSONObject): TodoItem {
         time = if (jsonObject.isNull("time")) null else jsonObject.optString("time"),
         completedAt = if (jsonObject.isNull("completedAt")) null else jsonObject.optLong("completedAt"),
         toDate = if (jsonObject.isNull("toDate")) null else jsonObject.optLong("toDate"),
-        toTime = if (jsonObject.isNull("toTime")) null else jsonObject.optString("toTime")
+        toTime = if (jsonObject.isNull("toTime")) null else jsonObject.optString("toTime"),
+        originTemplateId = if (jsonObject.isNull("originTemplateId")) null else jsonObject.optLong("originTemplateId"),
+        originTemplateItemId = if (jsonObject.isNull("originTemplateItemId")) null else jsonObject.optLong("originTemplateItemId")
     )
 }
 

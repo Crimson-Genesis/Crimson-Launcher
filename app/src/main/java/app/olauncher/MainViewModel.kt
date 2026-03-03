@@ -7,6 +7,7 @@ import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.os.Build
 import android.os.UserHandle
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -70,23 +71,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // We use logicalDayTrigger to refresh todayTodoItems when logical day might have changed
     private val logicalDayTrigger = MutableLiveData<Long>(System.currentTimeMillis())
     
-    val todayTodoItems: LiveData<List<TodoItem>> = logicalDayTrigger.switchMap { timestamp ->
-        val logicalDate = prefs.getLogicalDayKey(timestamp)
-        val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
-        // Adjust cal if timestamp was before reset time today
-        val resetMinutes = prefs.resetTimeMinutes
-        val currentMinutes = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
-        if (currentMinutes < resetMinutes) {
-            cal.add(Calendar.DAY_OF_YEAR, -1)
+    private val activeBoilerId = MutableLiveData<Long>(prefs.activeBoilerId)
+
+    val todayTodoItems: LiveData<List<TodoItem>> = activeBoilerId.switchMap { boilerId ->
+        logicalDayTrigger.switchMap { timestamp ->
+            val logicalDate = prefs.getLogicalDayKey(timestamp)
+            val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
+            // Adjust cal if timestamp was before reset time today
+            val resetMinutes = prefs.resetTimeMinutes
+            val currentMinutes = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+            if (currentMinutes < resetMinutes) {
+                cal.add(Calendar.DAY_OF_YEAR, -1)
+            }
+            val dayOfWeek = SimpleDateFormat("EEE", Locale.US).format(cal.time)
+            repository.getTodayTodoItems(logicalDate, dayOfWeek, boilerId)
         }
-        val dayOfWeek = SimpleDateFormat("EEE", Locale.US).format(cal.time)
-        repository.getTodayTodoItems(logicalDate, dayOfWeek)
     }
 
-    val completedTodoItems: LiveData<List<TodoItem>> = repository.completedTodoItems
-    val upcomingTodoItems: LiveData<List<TodoItem>> = repository.upcomingTodoItems
-    val allDailyTasks: LiveData<List<TodoItem>> = repository.allDailyTasks
-    val allTodoItems: LiveData<List<TodoItem>> = database.todoItemDao().getAllTodoItems()
+    val completedTodoItems: LiveData<List<TodoItem>> = activeBoilerId.switchMap { boilerId ->
+        repository.getCompletedTodoItems(boilerId)
+    }
+    val upcomingTodoItems: LiveData<List<TodoItem>> = activeBoilerId.switchMap { boilerId ->
+        repository.getUpcomingTodoItems(boilerId)
+    }
+    val allDailyTasks: LiveData<List<TodoItem>> = activeBoilerId.switchMap { boilerId ->
+        repository.getDailyTasksForTemplate(boilerId)
+    }
     val allTemplates: LiveData<List<TodoTemplate>> = templateRepository.allTemplates
     
     private val _activeBoilerName = MutableLiveData<String>()
@@ -148,6 +158,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 prefs.activeBoilerId = defaultTemplate.id
                 prefs.activeBoilerName = defaultTemplate.name
                 _activeBoilerName.postValue(defaultTemplate.name)
+                activeBoilerId.postValue(defaultTemplate.id)
             }
         }
     }
@@ -170,11 +181,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun insert(todoItem: TodoItem) = viewModelScope.launch(Dispatchers.IO) {
-        val id = repository.insert(todoItem)
-        prefs.dailyStatsAddedCount++
-        
+        var itemToInsert = todoItem
         if (todoItem.type == TodoType.DAILY && prefs.activeBoilerId != -1L) {
-            database.todoTemplateDao().insertTemplateItem(TodoTemplateItem(
+            val templateItemId = database.todoTemplateDao().insertTemplateItem(TodoTemplateItem(
                 templateId = prefs.activeBoilerId,
                 task = todoItem.task,
                 type = todoItem.type,
@@ -183,9 +192,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 toDate = todoItem.toDate,
                 toTime = todoItem.toTime
             ))
+            itemToInsert = todoItem.copy(
+                originTemplateId = prefs.activeBoilerId,
+                originTemplateItemId = templateItemId
+            )
         }
 
-        val insertedItem = todoItem.copy(id = id)
+        val id = repository.insert(itemToInsert)
+        prefs.dailyStatsAddedCount++
+
+        val insertedItem = itemToInsert.copy(id = id)
         EventLogger.log(appContext, LogEvent.TaskAdded(insertedItem, buildSnapshot()))
     }
 
@@ -206,10 +222,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         repository.update(updatedItem)
 
-        if (updatedItem.type == TodoType.DAILY && prefs.activeBoilerId != -1L) {
-            database.todoTemplateDao().updateDailyTaskInTemplate(
-                templateId = prefs.activeBoilerId,
-                oldTask = oldItem.task,
+        if (updatedItem.type == TodoType.DAILY && updatedItem.originTemplateItemId != null) {
+            database.todoTemplateDao().updateDailyTaskInTemplateById(
+                id = updatedItem.originTemplateItemId,
                 newTask = updatedItem.task,
                 newTime = updatedItem.time,
                 newDaysOfWeek = updatedItem.daysOfWeek,
@@ -245,8 +260,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         repository.delete(todoItem)
         prefs.dailyStatsDeletedCount++
         
-        if (todoItem.type == TodoType.DAILY && prefs.activeBoilerId != -1L) {
-            database.todoTemplateDao().deleteDailyTaskFromTemplate(prefs.activeBoilerId, todoItem.task)
+        if (todoItem.type == TodoType.DAILY && todoItem.originTemplateItemId != null) {
+            database.todoTemplateDao().deleteDailyTaskFromTemplateById(todoItem.originTemplateItemId)
         }
 
         EventLogger.log(appContext, LogEvent.TaskDeleted(todoItem, snapshot = buildSnapshot()))
@@ -264,6 +279,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.activeBoilerId = -1L
         prefs.activeBoilerName = "Default"
         _activeBoilerName.postValue("Default")
+        activeBoilerId.postValue(-1L)
         
         // Insert a new Default template
         val defaultTemplate = TodoTemplate(name = "Default")
@@ -273,6 +289,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         prefs.activeBoilerId = newDefaultId
         prefs.activeBoilerName = "Default"
         _activeBoilerName.postValue("Default")
+        activeBoilerId.postValue(newDefaultId)
     }
 
     suspend fun replaceTodoItems(items: List<TodoItem>) = withContext(Dispatchers.IO) {
@@ -301,26 +318,56 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun applyTemplate(templateId: Long) = viewModelScope.launch(Dispatchers.IO) {
-        val templateWithItems = templateRepository.getTemplateWithItems(templateId) ?: return@launch
+        val templateWithItems = templateRepository.getTemplateWithItems(templateId) ?: run {
+            Log.e("BoilerSwitch", "Template with ID $templateId not found. Re-initializing default.")
+            recreateDefaultTemplate()
+            return@launch
+        }
+        
+        val oldTemplateId = prefs.activeBoilerId
         
         prefs.activeBoilerId = templateId
         prefs.activeBoilerName = templateWithItems.template.name
         _activeBoilerName.postValue(templateWithItems.template.name)
+        activeBoilerId.postValue(templateId)
 
-        // Clear current DAILY tasks
-        repository.deleteByType(TodoType.DAILY)
+        // Clear uncompleted DAILY tasks from the previous template
+        if (oldTemplateId != -1L) {
+            database.todoItemDao().deleteUncompletedDailyByTemplateId(oldTemplateId)
+        }
 
-        // Insert template items as DAILY tasks
-        templateWithItems.items.forEach {
-            repository.insert(TodoItem(
-                task = it.task,
-                type = it.type,
-                dueDate = it.dueDate,
-                time = it.time,
-                daysOfWeek = it.daysOfWeek,
-                toDate = it.toDate,
-                toTime = it.toTime
-            ))
+        // Insert template items as DAILY tasks, deduplicating using originTemplateItemId
+        templateWithItems.items.forEach { templateItem ->
+            val existingItem = repository.getByTemplateItemId(templateItem.id)
+            if (existingItem == null) {
+                repository.insert(TodoItem(
+                    task = templateItem.task,
+                    type = templateItem.type,
+                    dueDate = templateItem.dueDate,
+                    time = templateItem.time,
+                    daysOfWeek = templateItem.daysOfWeek,
+                    toDate = templateItem.toDate,
+                    toTime = templateItem.toTime,
+                    originTemplateId = templateId,
+                    originTemplateItemId = templateItem.id
+                ))
+            } else {
+                if (!existingItem.isCompleted) {
+                    // Update uncompleted task if it exists (sanity check)
+                    repository.update(existingItem.copy(
+                        task = templateItem.task,
+                        type = templateItem.type,
+                        dueDate = templateItem.dueDate,
+                        time = templateItem.time,
+                        daysOfWeek = templateItem.daysOfWeek,
+                        toDate = templateItem.toDate,
+                        toTime = templateItem.toTime,
+                        originTemplateId = templateId
+                    ))
+                } else {
+                    Log.d("BoilerSwitch", "Skipping re-insertion of completed task: ${existingItem.task} (originId: ${existingItem.originTemplateItemId})")
+                }
+            }
         }
         EventLogger.log(appContext, LogEvent.TemplateApplied(templateWithItems.template.name, templateWithItems.items.size))
     }
@@ -329,17 +376,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         templateRepository.deleteTemplate(template)
         EventLogger.log(appContext, LogEvent.TemplateDeleted(template.name))
         
-        if (prefs.activeBoilerId == template.id) {
+        val remainingTemplates = templateRepository.getAllTemplatesSync()
+        if (remainingTemplates.isEmpty()) {
+            recreateDefaultTemplate()
+        } else if (prefs.activeBoilerId == template.id) {
             // Switch back to Default if active one is deleted
             val defaultTemplate = database.todoTemplateDao().getDefaultTemplate()
             if (defaultTemplate != null) {
                 applyTemplate(defaultTemplate.id)
             } else {
-                prefs.activeBoilerId = -1L
-                prefs.activeBoilerName = "Default"
-                _activeBoilerName.postValue("Default")
+                // If "Default" doesn't exist but other templates do, pick the first one
+                applyTemplate(remainingTemplates.first().id)
             }
         }
+    }
+
+    private suspend fun recreateDefaultTemplate() {
+        val defaultTemplate = TodoTemplate(name = "Default")
+        val newDefaultId = templateRepository.insertTemplateWithItems(defaultTemplate, emptyList())
+        applyTemplate(newDefaultId)
     }
 
     private suspend fun buildSnapshot(): DailySnapshot = withContext(Dispatchers.IO) {

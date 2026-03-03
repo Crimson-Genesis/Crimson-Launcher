@@ -140,17 +140,21 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 if (!templates.isNullOrEmpty()) {
-                    withContext(Dispatchers.IO) {
+                    val firstTemplateId = withContext(Dispatchers.IO) {
                         val dao = AppDatabase.getDatabase(this@MainActivity).todoTemplateDao()
                         dao.deleteAllTemplates()
+                        var firstId = -1L
                         templates.forEach { templateWithItems ->
-                            dao.insertTemplateWithItems(templateWithItems.template, templateWithItems.items)
+                            val id = dao.insertTemplateWithItems(templateWithItems.template, templateWithItems.items)
+                            if (firstId == -1L || templateWithItems.template.name == "Default") {
+                                firstId = id
+                            }
                         }
-                        
-                        // Reset activeBoilerId to avoid stale reference post-restore
-                        // We set it to -1 so MainViewModel can re-initialize it correctly from Default
-                        prefs.activeBoilerId = -1L
-                        prefs.activeBoilerName = "Default"
+                        firstId
+                    }
+                    
+                    if (firstTemplateId != -1L) {
+                        viewModel.applyTemplate(firstTemplateId)
                     }
                 }
                 

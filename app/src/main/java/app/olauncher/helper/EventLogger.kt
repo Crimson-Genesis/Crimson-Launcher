@@ -242,7 +242,9 @@ object EventLogger {
         }
         put("is_completed", todo.isCompleted)
         put("completed_at", todo.completedAt)
-        
+        put("origin_template_id", todo.originTemplateId ?: JSONObject.NULL)
+        put("origin_template_item_id", todo.originTemplateItemId ?: JSONObject.NULL)
+
         // Overnight/Range info
         put("is_overnight", todo.isOvernight())
         val startAt = TodoDateTimeHelper.getStartAtMillis(todo, prefs = prefs)

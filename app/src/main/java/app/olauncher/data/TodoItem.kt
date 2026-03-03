@@ -16,7 +16,9 @@ data class TodoItem(
     val daysOfWeek: String? = null, // For daily todos (e.g., "Mon Tue Wed")
     val completedAt: Long? = null,
     val toDate: Long? = null,
-    val toTime: String? = null
+    val toTime: String? = null,
+    val originTemplateId: Long? = null,
+    val originTemplateItemId: Long? = null
 ) {
     fun isOverdue(prefs: Prefs): Boolean {
         if (isCompleted) return false

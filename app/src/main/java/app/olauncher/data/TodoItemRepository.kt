@@ -5,22 +5,24 @@ import androidx.lifecycle.map
 
 class TodoItemRepository(private val todoItemDao: TodoItemDao) {
 
-    fun getTodayTodoItems(logicalDate: String, dayOfWeek: String): LiveData<List<TodoItem>> {
-        return todoItemDao.getTodayTodoItems(logicalDate, dayOfWeek).map { 
+    fun getTodayTodoItems(logicalDate: String, dayOfWeek: String, templateId: Long): LiveData<List<TodoItem>> {
+        return todoItemDao.getTodayTodoItems(logicalDate, dayOfWeek, templateId).map { 
             TodoSorter.sortToday(it) 
         }
     }
     
-    val completedTodoItems: LiveData<List<TodoItem>> = todoItemDao.getCompletedTodoItems().map { 
+    fun getCompletedTodoItems(templateId: Long): LiveData<List<TodoItem>> = todoItemDao.getCompletedTodoItems(templateId).map { 
         TodoSorter.sortCompleted(it) 
     }
     
-    val upcomingTodoItems: LiveData<List<TodoItem>> = todoItemDao.getUpcomingTodoItems().map { 
+    fun getUpcomingTodoItems(templateId: Long): LiveData<List<TodoItem>> = todoItemDao.getUpcomingTodoItems(templateId).map { 
         TodoSorter.sortUpcoming(it) 
     }
-    
-    val allDailyTasks: LiveData<List<TodoItem>> = todoItemDao.getAllDailyTasks().map { 
-        TodoSorter.sortDaily(it) 
+
+    fun getDailyTasksForTemplate(templateId: Long): LiveData<List<TodoItem>> {
+        return todoItemDao.getDailyTasksForTemplate(templateId).map {
+            TodoSorter.sortDaily(it)
+        }
     }
 
     suspend fun insert(todoItem: TodoItem): Long {
@@ -47,7 +49,19 @@ class TodoItemRepository(private val todoItemDao: TodoItemDao) {
         return todoItemDao.getById(id)
     }
 
+    suspend fun getByTemplateItemId(templateItemId: Long): TodoItem? {
+        return todoItemDao.getByTemplateItemId(templateItemId)
+    }
+
     suspend fun getAllTodoItemsSync(): List<TodoItem> {
         return todoItemDao.getAllTodoItemsSync()
+    }
+
+    suspend fun deleteUncompletedDailyByTemplateId(templateId: Long) {
+        todoItemDao.deleteUncompletedDailyByTemplateId(templateId)
+    }
+
+    suspend fun deleteAllDailyByTemplateId(templateId: Long) {
+        todoItemDao.deleteAllDailyByTemplateId(templateId)
     }
 }
