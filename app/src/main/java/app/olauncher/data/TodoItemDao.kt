@@ -69,7 +69,7 @@ interface TodoItemDao {
     @Query("SELECT * FROM todo_items WHERE isCompleted = 0 AND (type = 'TIMED' OR type = 'TIMELESS') AND (originTemplateId IS NULL OR originTemplateId = :templateId)")
     fun getUpcomingTodoItems(templateId: Long): LiveData<List<TodoItem>>
 
-    @Query("UPDATE todo_items SET isCompleted = 0 WHERE type = 'DAILY'")
+    @Query("UPDATE todo_items SET isCompleted = 0, completedAt = NULL WHERE type = 'DAILY'")
     suspend fun resetDailyTasks()
 
     @Query("DELETE FROM todo_items WHERE type = 'DAILY' AND originTemplateId = :templateId")

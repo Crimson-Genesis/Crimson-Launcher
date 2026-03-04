@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mainLayout"
     android:layout_width="match_parent"
@@ -74,6 +75,19 @@
         android:background="@android:color/transparent"
         android:paddingStart="12dp"
         android:paddingEnd="12dp" />
+
+    <!-- Refresh button -->
+    <ImageView
+        android:id="@+id/btnRefresh"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="12dp"
+        android:padding="12dp"
+        android:src="@drawable/ic_refresh"
+        android:alpha="0.5"
+        android:contentDescription="Refresh"
+        app:tint="@android:color/white" />
 
     <!-- Set default launcher -->
     <TextView

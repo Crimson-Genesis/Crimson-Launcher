@@ -24,6 +24,7 @@ import app.olauncher.data.TodoTemplateItem
 import app.olauncher.data.TodoTemplateRepository
 import app.olauncher.data.TodoType
 import app.olauncher.helper.DailySnapshot
+import app.olauncher.helper.DaySummary
 import app.olauncher.helper.EventLogger
 import app.olauncher.helper.LogEvent
 import app.olauncher.helper.SingleLiveEvent
@@ -33,6 +34,8 @@ import app.olauncher.helper.isCrimsonDefault as isCrimsonDefaultHelper
 import app.olauncher.helper.usageStats.EventLogWrapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -43,6 +46,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val appContext by lazy { application.applicationContext }
     private val prefs = Prefs(appContext)
     private val launcherApps by lazy { appContext.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps }
+    private val resetMutex = Mutex()
 
     val firstOpen = MutableLiveData<Boolean>()
     val toggleDateTime = MutableLiveData<Unit>()
@@ -97,6 +101,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val allDailyTasks: LiveData<List<TodoItem>> = activeBoilerId.switchMap { boilerId ->
         repository.getDailyTasksForTemplate(boilerId)
     }
+    val allTodoItems: LiveData<List<TodoItem>> = database.todoItemDao().getAllTodoItems()
     val allTemplates: LiveData<List<TodoTemplate>> = templateRepository.allTemplates
     
     private val _activeBoilerName = MutableLiveData<String>()
@@ -169,6 +174,68 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     suspend fun getTodoItemById(id: Long): TodoItem? = withContext(Dispatchers.IO) {
         repository.getById(id)
+    }
+
+    fun checkAndPerformMidnightReset() {
+        viewModelScope.launch(Dispatchers.IO) {
+            resetMutex.withLock {
+                val currentLogicalDay = prefs.getLogicalDayKey(System.currentTimeMillis())
+                val lastReset = prefs.lastResetDayKey
+                
+                if (lastReset == null) {
+                    prefs.lastResetDayKey = currentLogicalDay
+                    return@withLock
+                }
+
+                if (lastReset != currentLogicalDay) {
+                    Log.d("Midnight", "New logical day detected: $currentLogicalDay (previously $lastReset). Resetting daily tasks.")
+                    
+                    val allItems = repository.getAllTodoItemsSync()
+                    
+                    val completedYesterdayCount = allItems.count { it.isCompleted && it.completedAt != null && prefs.getLogicalDayKey(it.completedAt) == lastReset }
+                    val totalYesterday = allItems.count { 
+                        it.type == TodoType.DAILY || (it.type == TodoType.TIMED && it.dueDate != null && prefs.getLogicalDayKey(it.dueDate) == lastReset)
+                    }
+                    val dailyTasks = allItems.filter { it.type == TodoType.DAILY }
+                    val dailyCompleted = dailyTasks.count { it.isCompleted }
+                    val timedOverdue = allItems.count { 
+                        it.type == TodoType.TIMED && !it.isCompleted && (it.dueDate ?: 0) < System.currentTimeMillis() && prefs.getLogicalDayKey(it.dueDate ?: 0) != lastReset && prefs.getLogicalDayKey(it.dueDate ?: 0) != currentLogicalDay
+                    }
+
+                    if (completedYesterdayCount > 0) {
+                        prefs.currentStreakDays++
+                        prefs.lastCompletionDate = lastReset
+                    } else {
+                        prefs.currentStreakDays = 0
+                    }
+
+                    val summary = DaySummary(
+                        completedToday = completedYesterdayCount,
+                        totalToday = totalYesterday,
+                        completionRate = if (totalYesterday > 0) completedYesterdayCount.toDouble() / totalYesterday else 0.0,
+                        dailyTasksCompleted = dailyCompleted,
+                        dailyTasksTotal = dailyTasks.size,
+                        timedOverdue = timedOverdue,
+                        deletedToday = prefs.dailyStatsDeletedCount,
+                        addedToday = prefs.dailyStatsAddedCount,
+                        streak = prefs.currentStreakDays
+                    )
+
+                    EventLogger.log(appContext, LogEvent.DayReset(summary))
+                    
+                    prefs.dailyStatsAddedCount = 0
+                    prefs.dailyStatsDeletedCount = 0
+                    
+                    database.todoItemDao().resetDailyTasks()
+                    
+                    prefs.lastResetDayKey = currentLogicalDay
+                    prefs.shownOnDayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
+                }
+                
+                // Always trigger refresh at the end of the check, even if reset didn't happen
+                refreshTodayList()
+            }
+        }
     }
 
     fun resetDailyTasks() = viewModelScope.launch(Dispatchers.IO) {

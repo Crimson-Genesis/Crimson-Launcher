@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.widget.FrameLayout
+import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
@@ -22,6 +23,7 @@ import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -41,6 +43,8 @@ import app.olauncher.helper.openCalendar
 import app.olauncher.helper.openSearch
 import app.olauncher.helper.showToast
 import app.olauncher.listener.OnSwipeTouchListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -81,6 +85,18 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         viewModel.checkIsCrimsonDefault()
         if (prefs.showStatusBar) showStatusBar()
         else hideStatusBar()
+        
+        // Ensure database is reset if day changed while we were away
+        checkDayResetAndRefresh()
+    }
+
+    private fun checkDayResetAndRefresh() {
+        val currentLogicalDay = prefs.getLogicalDayKey(System.currentTimeMillis())
+        if (prefs.lastResetDayKey != currentLogicalDay) {
+            // Trigger refresh - the actual reset logic is in MainActivity.checkMidnightUpdate 
+            // which runs onResume too, but we force a trigger here to be sure.
+            viewModel.refreshTodayList()
+        }
     }
 
     override fun onClick(view: View) {
@@ -90,6 +106,22 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
             R.id.date -> openCalendarApp()
             R.id.setDefaultLauncher -> viewModel.resetLauncherLiveData.postValue(Unit)
             R.id.tvScreenTime -> openScreenTimeDigitalWellbeing()
+            R.id.btnRefresh -> manualRefresh()
+        }
+    }
+
+    private fun manualRefresh() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            // Ensure reset logic runs before refresh if day has changed
+            val currentLogicalDay = prefs.getLogicalDayKey(System.currentTimeMillis())
+            if (prefs.lastResetDayKey != currentLogicalDay) {
+                // If MainActivity hasn't reset yet, do it now
+                viewModel.resetDailyTasks()
+            }
+            launch(Dispatchers.Main) {
+                populateHomeScreen()
+                viewModel.refreshTodayList()
+            }
         }
     }
 
@@ -145,10 +177,16 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         binding.setDefaultLauncher.setOnClickListener(this)
         binding.setDefaultLauncher.setOnLongClickListener(this)
         binding.tvScreenTime.setOnClickListener(this)
+        binding.btnRefresh.setOnClickListener(this)
     }
 
     private fun setHomeAlignment(horizontalGravity: Int = prefs.homeAlignment) {
         binding.dateTimeLayout.gravity = horizontalGravity
+        
+        // Align refresh button
+        val params = binding.btnRefresh.layoutParams as FrameLayout.LayoutParams
+        params.gravity = Gravity.BOTTOM or horizontalGravity
+        binding.btnRefresh.layoutParams = params
     }
 
     private fun populateDateTime() {

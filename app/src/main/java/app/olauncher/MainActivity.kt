@@ -309,6 +309,9 @@ class MainActivity : AppCompatActivity() {
                 prefs.dailyStatsAddedCount = 0
                 prefs.dailyStatsDeletedCount = 0
                 viewModel.resetDailyTasks()
+                withContext(Dispatchers.Main) {
+                    viewModel.refreshTodayList()
+                }
                 prefs.lastResetDayKey = currentLogicalDay
                 // Update legacy pref for backward compatibility if any other part of app uses it
                 prefs.shownOnDayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
