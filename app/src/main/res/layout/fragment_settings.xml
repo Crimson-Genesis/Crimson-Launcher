@@ -588,6 +588,31 @@
                         tools:text="00:00" />
                 </FrameLayout>
 
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp">
+
+                    <TextView
+                        style="@style/TextSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:paddingVertical="8dp"
+                        android:text="@string/lockscreen_todo_notification"
+                        android:textColor="?attr/primaryColor" />
+
+                    <TextView
+                        android:id="@+id/lockscreenTodoToggle"
+                        style="@style/TextSmallBold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end|bottom"
+                        android:layout_marginEnd="4dp"
+                        android:padding="8dp"
+                        android:text="@string/off" />
+                </FrameLayout>
+
                 <TextView
                     android:id="@+id/backupData"
                     style="@style/TextSmall"
@@ -639,7 +664,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="12dp"
-                    android:text="Progress Logs"
+                    android:text="@string/progress_logs"
                     android:textColor="?attr/primaryColor" />
 
                 <FrameLayout
@@ -653,7 +678,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:paddingVertical="8dp"
-                        android:text="Logging Enabled"
+                        android:text="@string/logging_enabled"
                         android:textColor="?attr/primaryColor" />
 
                     <TextView
@@ -680,7 +705,7 @@
                         style="@style/TextSmall"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Log Storage Folder"
+                        android:text="@string/log_storage_folder"
                         android:textColor="?attr/primaryColor" />
 
                     <TextView

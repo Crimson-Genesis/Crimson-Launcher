@@ -1,7 +1,9 @@
 package app.olauncher
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
@@ -15,6 +17,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -28,6 +31,7 @@ import app.olauncher.databinding.ActivityMainBinding
 import app.olauncher.helper.DaySummary
 import app.olauncher.helper.EventLogger
 import app.olauncher.helper.LogEvent
+import app.olauncher.helper.TodoNotificationService
 import app.olauncher.helper.generateBackupJson
 import app.olauncher.helper.isDefaultLauncher
 import app.olauncher.helper.isEinkDisplay
@@ -243,6 +247,13 @@ class MainActivity : AppCompatActivity() {
         EventLogger.log(this, LogEvent.AppOpened)
 
         checkMidnightUpdate()
+        
+        if (prefs.showLockscreenTodo) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || 
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                TodoNotificationService.start(this)
+            }
+        }
     }
 
     private fun getLogicalDayKey(timestamp: Long): String {

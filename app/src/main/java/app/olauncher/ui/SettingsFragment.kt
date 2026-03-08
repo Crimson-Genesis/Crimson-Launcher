@@ -1,7 +1,9 @@
 package app.olauncher.ui
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.TimePickerDialog
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -11,7 +13,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
+import androidx.core.view.isVisible
 import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -27,6 +32,7 @@ import app.olauncher.helper.*
 import app.olauncher.listener.OnSwipeTouchListener
 import java.util.Calendar
 import java.util.Locale
+import kotlin.math.round
 
 class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListener {
 
@@ -35,6 +41,16 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
 
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            toggleLockscreenTodo()
+        } else {
+            requireContext().showToast(getString(R.string.notification_permission_required))
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
@@ -60,6 +76,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         populateLoggingToggle()
         populateHardcoreMode()
         populateDailyResetTime()
+        populateLockscreenTodo()
         initClickListeners()
         initObservers()
         initSwipeListener()
@@ -83,16 +100,16 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     override fun onClick(view: View) {
-        binding.dateTimeSelectLayout.visibility = View.GONE
-        binding.swipeDownSelectLayout.visibility = View.GONE
+        binding.dateTimeSelectLayout.isVisible = false
+        binding.swipeDownSelectLayout.isVisible = false
 
-        if (binding.textSizesLayout.visibility == View.VISIBLE) {
+        if (binding.textSizesLayout.isVisible) {
             if (view.id != R.id.textSizeMinus && view.id != R.id.textSizePlus && view.id != R.id.textSizeValue && view.id != R.id.textSizeCurrent) {
-                binding.textSizesLayout.visibility = View.GONE
+                binding.textSizesLayout.isVisible = false
                 applyTextSizeScale()
             }
         }
-        binding.alignmentSelectLayout.visibility = View.GONE
+        binding.alignmentSelectLayout.isVisible = false
 
         when (view.id) {
             R.id.olauncherHiddenApps -> showHiddenApps()
@@ -100,33 +117,33 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             R.id.appInfo -> openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
             R.id.setLauncher -> viewModel.resetLauncherLiveData.call()
             R.id.autoShowKeyboard -> toggleKeyboardText()
-            R.id.alignment -> binding.alignmentSelectLayout.visibility = View.VISIBLE
+            R.id.alignment -> binding.alignmentSelectLayout.isVisible = true
             R.id.alignmentLeft -> viewModel.updateHomeAlignment(Gravity.START)
             R.id.alignmentRight -> viewModel.updateHomeAlignment(Gravity.END)
             R.id.statusBar -> toggleStatusBar()
-            R.id.dateTime -> binding.dateTimeSelectLayout.visibility = View.VISIBLE
+            R.id.dateTime -> binding.dateTimeSelectLayout.isVisible = true
             R.id.dateTimeOn -> toggleDateTime(Constants.DateTime.ON)
             R.id.dateTimeOff -> toggleDateTime(Constants.DateTime.OFF)
             R.id.dateOnly -> toggleDateTime(Constants.DateTime.DATE_ONLY)
 
             R.id.textSizeValue -> {
-                if (binding.textSizesLayout.visibility == View.VISIBLE) {
-                    binding.textSizesLayout.visibility = View.GONE
+                if (binding.textSizesLayout.isVisible) {
+                    binding.textSizesLayout.isVisible = false
                     applyTextSizeScale()
                 } else {
-                    binding.textSizesLayout.visibility = View.VISIBLE
+                    binding.textSizesLayout.isVisible = true
                 }
             }
 
             R.id.textSizeCurrent -> {
-                binding.textSizesLayout.visibility = View.GONE
+                binding.textSizesLayout.isVisible = false
                 applyTextSizeScale()
             }
 
             R.id.textSizeMinus -> adjustTextSizePreview(-0.1f)
             R.id.textSizePlus -> adjustTextSizePreview(0.1f)
 
-            R.id.swipeDownAction -> binding.swipeDownSelectLayout.visibility = View.VISIBLE
+            R.id.swipeDownAction -> binding.swipeDownSelectLayout.isVisible = true
             R.id.notifications -> updateSwipeDownAction(Constants.SwipeDownAction.NOTIFICATIONS)
             R.id.search -> updateSwipeDownAction(Constants.SwipeDownAction.SEARCH)
             
@@ -145,6 +162,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             R.id.loggingToggle -> toggleLogging()
             R.id.hardcoreMode -> toggleHardcoreMode()
             R.id.dailyResetTime -> showTimePickerDialog()
+            R.id.lockscreenTodoToggle -> checkAndToggleLockscreenTodo()
         }
     }
 
@@ -183,6 +201,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         binding.loggingToggle.setOnClickListener(this)
         binding.hardcoreMode.setOnClickListener(this)
         binding.dailyResetTime.setOnClickListener(this)
+        binding.lockscreenTodoToggle?.setOnClickListener(this)
 
         binding.alignment.setOnLongClickListener(this)
     }
@@ -270,11 +289,11 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         val minScale = 0.5f
         val maxScale = 1.2f
         val current = if (pendingTextSizeScale > 0) pendingTextSizeScale else prefs.textSizeScale
-        val newScale = Math.round((current + delta) * 10f) / 10f
+        val newScale = round((current + delta) * 10f) / 10f
         val clamped = newScale.coerceIn(minScale, maxScale)
         if (clamped == current) return
         pendingTextSizeScale = clamped
-        val formatted = String.format("%.1f", clamped)
+        val formatted = String.format(Locale.US, "%.1f", clamped)
         binding.textSizeValue.text = formatted
         binding.textSizeCurrent.text = formatted
     }
@@ -304,7 +323,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     private fun populateTextSize() {
-        val formatted = String.format("%.1f", prefs.textSizeScale)
+        val formatted = String.format(Locale.US, "%.1f", prefs.textSizeScale)
         binding.textSizeValue.text = formatted
         binding.textSizeCurrent.text = formatted
     }
@@ -313,7 +332,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (requireContext().appUsagePermissionGranted()) binding.screenTimeOnOff.text = getString(R.string.on)
             else binding.screenTimeOnOff.text = getString(R.string.off)
-        } else binding.screenTimeLayout.visibility = View.GONE
+        } else binding.screenTimeLayout.isVisible = false
     }
 
     private fun populateKeyboardText() {
@@ -405,13 +424,40 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             val newVal = selectedHour * 60 + selectedMinute
             prefs.resetTimeMinutes = newVal
             
-            // Realign logical day so the next reset happens at the new boundary
+            // Realign logical day so the next reset happens at the boundary
             prefs.lastResetDayKey = prefs.getLogicalDayKey(System.currentTimeMillis())
             prefs.shownOnDayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
 
             populateDailyResetTime()
             EventLogger.log(requireContext(), LogEvent.ResetTimeChanged(oldVal, newVal))
         }, hours, minutes, true).show()
+    }
+
+    private fun checkAndToggleLockscreenTodo() {
+        if (!prefs.showLockscreenTodo && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return
+            }
+        }
+        toggleLockscreenTodo()
+    }
+
+    private fun toggleLockscreenTodo() {
+        prefs.showLockscreenTodo = !prefs.showLockscreenTodo
+        populateLockscreenTodo()
+        
+        if (prefs.showLockscreenTodo) {
+            TodoNotificationService.start(requireContext())
+        } else {
+            TodoNotificationService.stop(requireContext())
+        }
+        EventLogger.log(requireContext(), LogEvent.SettingsChanged("lockscreen_todo", prefs.showLockscreenTodo))
+    }
+
+    private fun populateLockscreenTodo() {
+        binding.lockscreenTodoToggle?.text = if (prefs.showLockscreenTodo) getString(R.string.on)
+        else getString(R.string.off)
     }
 
     override fun onResume() {

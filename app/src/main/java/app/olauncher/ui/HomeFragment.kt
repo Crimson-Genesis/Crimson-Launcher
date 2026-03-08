@@ -86,6 +86,9 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         if (prefs.showStatusBar) showStatusBar()
         else hideStatusBar()
         
+        // Refresh the checklist every time we return to home (e.g. device unlock)
+        viewModel.refreshTodayList()
+        
         // Ensure database is reset if day changed while we were away
         checkDayResetAndRefresh()
     }

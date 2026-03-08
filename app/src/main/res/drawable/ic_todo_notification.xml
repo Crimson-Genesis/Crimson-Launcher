@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Scaling the symbol to be a bit bigger -->
+    <group
+        android:scaleX="1.8"
+        android:scaleY="1.8"
+        android:pivotX="54"
+        android:pivotY="54">
+
+        <!-- Geometric Angular C -->
+        <path
+            android:fillColor="@color/overdue_crimson"
+            android:pathData="M78,35 L48,21 L26,45 L28,63 L52,87 L80,73 L80,63 L53,74 L39,63 L37,45 L51,33 L78,45 Z" />
+
+        <!-- Central Ignition Spike (Diamond) -->
+        <path
+            android:fillColor="@color/overdue_crimson"
+            android:pathData="M54,39 L60,54 L54,69 L48,54 Z" />
+
+    </group>
+
+</vector>

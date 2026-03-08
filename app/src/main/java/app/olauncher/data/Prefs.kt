@@ -68,6 +68,7 @@ class Prefs(context: Context) {
 
     private val RESET_TIME_MINUTES = "RESET_TIME_MINUTES"
     private val LAST_RESET_DAY_KEY = "LAST_RESET_DAY_KEY"
+    private val SHOW_LOCKSCREEN_TODO = "SHOW_LOCKSCREEN_TODO"
 
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_FILENAME, 0)
 
@@ -279,6 +280,10 @@ class Prefs(context: Context) {
     var lastResetDayKey: String?
         get() = prefs.getString(LAST_RESET_DAY_KEY, null)
         set(value) = prefs.edit { putString(LAST_RESET_DAY_KEY, value).apply() }
+
+    var showLockscreenTodo: Boolean
+        get() = prefs.getBoolean(SHOW_LOCKSCREEN_TODO, false)
+        set(value) = prefs.edit { putBoolean(SHOW_LOCKSCREEN_TODO, value).apply() }
 
     fun getLogicalDayKey(timestamp: Long): String {
         val resetMinutes = resetTimeMinutes
