@@ -10,15 +10,11 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.os.Build
-import android.text.Spannable
-import android.text.SpannableString
-import android.text.style.ForegroundColorSpan
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.switchMap
-import app.olauncher.MainActivity
 import app.olauncher.R
 import app.olauncher.data.AppDatabase
 import app.olauncher.data.Prefs
@@ -142,65 +138,79 @@ class TodoNotificationService : LifecycleService() {
         if (isDismissedByUser) return
 
         val now = System.currentTimeMillis()
-        val activeItems = items.filter { !it.isCompleted }
-        
-        // Sort items by scheduled start time, then by ID as a stable tie-breaker
-        val sortedActive = activeItems.sortedWith(compareBy(
-            { TodoDateTimeHelper.getStartAtMillis(it, now, prefs) ?: Long.MAX_VALUE },
-            { it.id }
-        ))
+        val uncompleted = items.filter { !it.isCompleted }
 
-        val title: CharSequence
-        val text: String
-        var bigText: CharSequence? = null
-        
-        if (sortedActive.isEmpty()) {
-            title = getString(R.string.no_active_todos)
-            text = getString(R.string.enjoy_your_day)
-        } else {
-            val current = sortedActive[0]
-            val next = sortedActive.getOrNull(1)
-            
-            val currentInfo = getTaskInfo(current)
-            val titleText = if (currentInfo.isNotEmpty()) "${current.task} | $currentInfo" else current.task
-            
-            if (current.isOverdue(prefs)) {
-                val marker = "● "
-                val fullTitle = "$marker$titleText"
-                val spannable = SpannableString(fullTitle)
-                spannable.setSpan(
-                    ForegroundColorSpan(ContextCompat.getColor(this, R.color.overdue_crimson)),
-                    0, marker.length,
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                title = spannable
-            } else {
-                title = titleText
-            }
-            
-            // Overdue tasks list (ordered by time)
-            val overdueItems = sortedActive.filter { it.isOverdue(prefs) }
-            val overdueLine = if (overdueItems.isNotEmpty()) {
-                getString(R.string.overdue_prefix, overdueItems.joinToString { it.task })
-            } else ""
-
-            // Next task info
-            val nextLine = if (next != null) {
-                val nextInfo = getTaskInfo(next)
-                val nextContent = if (nextInfo.isNotEmpty()) "${next.task} | $nextInfo" else next.task
-                getString(R.string.next_task_prefix, nextContent)
-            } else {
-                getString(R.string.thats_all_for_today)
-            }
-
-            if (overdueLine.isNotEmpty()) {
-                text = "$overdueLine • $nextLine"
-                bigText = "$overdueLine\n$nextLine"
-            } else {
-                text = nextLine
-            }
+        if (uncompleted.isEmpty()) {
+            val title = getString(R.string.no_active_todos)
+            val text = getString(R.string.enjoy_your_day)
+            val notification = createNotification(title, text)
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(NOTIFICATION_ID, notification)
+            return
         }
+
+        // Build task groups from items.filter { !it.isCompleted }
+        // 1. overdue: tasks where item.isOverdue(prefs) == true
+        val overdue = uncompleted.filter { it.isOverdue(prefs) }
+            .sortedWith(compareBy({ TodoDateTimeHelper.getStartAtMillis(it, now, prefs) ?: Long.MAX_VALUE }, { it.id }))
+
+        // 2. activeNow: tasks where startAt <= now <= endAt, or tasks with no time (timeless/daily no-time)
+        val activeNow = uncompleted.filter {
+            val start = TodoDateTimeHelper.getStartAtMillis(it, now, prefs)
+            val end = TodoDateTimeHelper.getEndAtMillis(it, now, prefs)
+            if (start != null && end != null) {
+                now >= start && now <= end
+            } else {
+                // Tasks with no time (start == null) are considered active all day if not overdue
+                !it.isOverdue(prefs) && start == null
+            }
+        }.sortedWith(compareBy({ TodoDateTimeHelper.getStartAtMillis(it, now, prefs) ?: Long.MAX_VALUE }, { it.id }))
+
+        // 3. upcoming: tasks where startAt > now
+        val upcoming = uncompleted.filter {
+            val start = TodoDateTimeHelper.getStartAtMillis(it, now, prefs)
+            start != null && start > now
+        }.sortedWith(compareBy({ TodoDateTimeHelper.getStartAtMillis(it, now, prefs) ?: Long.MAX_VALUE }, { it.id }))
+
+        // Selection rules
+        val current = activeNow.firstOrNull()
         
+        // next = first item in upcoming or subsequent active items if current is also active
+        val next = activeNow.drop(1).firstOrNull() ?: upcoming.firstOrNull()
+
+        // Notification content rules: Title
+        val title: CharSequence = if (current != null) {
+            val currentInfo = getTaskInfo(current)
+            if (currentInfo.isNotEmpty()) "${current.task} | $currentInfo" else current.task
+        } else {
+            getString(R.string.no_current_task)
+        }
+
+        // Notification content rules: Body
+        // Overdue section first
+        val overdueLine = if (overdue.isNotEmpty()) {
+            getString(R.string.overdue_prefix, overdue.joinToString { it.task })
+        } else ""
+
+        // Next section second
+        val nextLine = if (next != null) {
+            val nextInfo = getTaskInfo(next)
+            val nextContent = if (nextInfo.isNotEmpty()) "${next.task} | $nextInfo" else next.task
+            getString(R.string.next_task_prefix, nextContent)
+        } else {
+            getString(R.string.thats_all_for_today)
+        }
+
+        val text: String
+        val bigText: CharSequence?
+        if (overdueLine.isNotEmpty()) {
+            text = "$overdueLine • $nextLine"
+            bigText = "$overdueLine\n$nextLine"
+        } else {
+            text = nextLine
+            bigText = null
+        }
+
         val notification = createNotification(title, text, bigText)
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)

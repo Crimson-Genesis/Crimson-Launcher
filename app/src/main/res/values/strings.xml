@@ -154,6 +154,7 @@
 
     <string name="lockscreen_todo_notification">Lockscreen todo notification</string>
     <string name="no_active_todos">No active todos</string>
+    <string name="no_current_task">No current task</string>
     <string name="enjoy_your_day">Enjoy your day!</string>
     <string name="thats_all_for_today">That\'s all for today!</string>
     <string name="next_task_prefix">Next: %s</string>
