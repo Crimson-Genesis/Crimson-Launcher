@@ -157,6 +157,7 @@
     <string name="enjoy_your_day">Enjoy your day!</string>
     <string name="thats_all_for_today">That\'s all for today!</string>
     <string name="next_task_prefix">Next: %s</string>
+    <string name="overdue_prefix">Overdue: %s</string>
     <string name="todo_today_channel_name">Todo Today</string>
     <string name="todo_today_channel_desc">Shows your current and next tasks on the lockscreen</string>
     <string name="notification_permission_required">Notification permission is required for this feature</string>

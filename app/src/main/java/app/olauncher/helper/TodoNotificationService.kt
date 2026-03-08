@@ -22,6 +22,7 @@ import app.olauncher.MainActivity
 import app.olauncher.R
 import app.olauncher.data.AppDatabase
 import app.olauncher.data.Prefs
+import app.olauncher.data.TodoDateTimeHelper
 import app.olauncher.data.TodoItem
 import app.olauncher.data.TodoItemRepository
 import app.olauncher.data.TodoType
@@ -140,16 +141,25 @@ class TodoNotificationService : LifecycleService() {
     private fun updateNotification(items: List<TodoItem>) {
         if (isDismissedByUser) return
 
+        val now = System.currentTimeMillis()
         val activeItems = items.filter { !it.isCompleted }
+        
+        // Sort items by scheduled start time, then by ID as a stable tie-breaker
+        val sortedActive = activeItems.sortedWith(compareBy(
+            { TodoDateTimeHelper.getStartAtMillis(it, now, prefs) ?: Long.MAX_VALUE },
+            { it.id }
+        ))
+
         val title: CharSequence
         val text: String
+        var bigText: CharSequence? = null
         
-        if (activeItems.isEmpty()) {
+        if (sortedActive.isEmpty()) {
             title = getString(R.string.no_active_todos)
             text = getString(R.string.enjoy_your_day)
         } else {
-            val current = activeItems[0]
-            val next = if (activeItems.size > 1) activeItems[1] else null
+            val current = sortedActive[0]
+            val next = sortedActive.getOrNull(1)
             
             val currentInfo = getTaskInfo(current)
             val titleText = if (currentInfo.isNotEmpty()) "${current.task} | $currentInfo" else current.task
@@ -168,16 +178,30 @@ class TodoNotificationService : LifecycleService() {
                 title = titleText
             }
             
-            text = if (next != null) {
+            // Overdue tasks list (ordered by time)
+            val overdueItems = sortedActive.filter { it.isOverdue(prefs) }
+            val overdueLine = if (overdueItems.isNotEmpty()) {
+                getString(R.string.overdue_prefix, overdueItems.joinToString { it.task })
+            } else ""
+
+            // Next task info
+            val nextLine = if (next != null) {
                 val nextInfo = getTaskInfo(next)
                 val nextContent = if (nextInfo.isNotEmpty()) "${next.task} | $nextInfo" else next.task
                 getString(R.string.next_task_prefix, nextContent)
             } else {
                 getString(R.string.thats_all_for_today)
             }
+
+            if (overdueLine.isNotEmpty()) {
+                text = "$overdueLine • $nextLine"
+                bigText = "$overdueLine\n$nextLine"
+            } else {
+                text = nextLine
+            }
         }
         
-        val notification = createNotification(title, text)
+        val notification = createNotification(title, text, bigText)
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
@@ -232,13 +256,13 @@ class TodoNotificationService : LifecycleService() {
         }
     }
 
-    private fun createNotification(title: CharSequence, text: String): android.app.Notification {
+    private fun createNotification(title: CharSequence, text: String, bigText: CharSequence? = null): android.app.Notification {
         val deleteIntent = PendingIntent.getBroadcast(
             this, 0, Intent(ACTION_DISMISSED).setPackage(packageName),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_todo_notification)
@@ -249,7 +273,12 @@ class TodoNotificationService : LifecycleService() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setDeleteIntent(deleteIntent)
             .setContentIntent(null) // Display-only
-            .build()
+
+        if (bigText != null) {
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+        }
+
+        return builder.build()
     }
 
     private fun createNotificationChannel() {
