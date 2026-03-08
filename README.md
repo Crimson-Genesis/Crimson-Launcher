@@ -326,6 +326,17 @@ The Settings Page contains all customization options for Crimson Launcher.
 
 ---
 
+## Release History
+
+- **Crimson v1.6** – Held the lockscreen todo notification in place (non-dismissible foreground service), refreshes the home checklist on every unlock, and syncs notification visibility with the current task/overdue ordering.
+- **Crimson v1.5** – Hardened boiler/template isolation, ensured restores reselect the right template, deduplicated completed rows, and triggered `refreshTodayList()` automatically after resetting at the configured time.
+- **Crimson v1.4** – Refined template isolation, restore hygiene, and the backup/log pipeline so today/todo feeds filter by originTemplateId and imported data immediately loads.
+- **Crimson v1.3** – Added overnight task support, task copy + boiler management stability fixes, and refreshed documentation; also removed local Gradle cache artifacts.
+- **Crimson v1.2** – Improved task ranges/visibility plus signing/build workflow updates.
+- **Crimson v1.1** – Initial Crimson Launcher release on top of Olauncher with integrated todo management.
+
+---
+
 ## Support
 
 For issues, feature requests, or contributions, please visit the [GitHub Repository](https://github.com/crimson-genesis/Olauncher).
