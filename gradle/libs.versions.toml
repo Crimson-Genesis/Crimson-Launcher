@@ -8,8 +8,10 @@ lifecycleViewmodelKtx = "2.9.0"
 material = "1.12.0"
 navigationFragmentKtx = "2.9.0"
 recyclerview = "1.4.0"
+viewpager2 = "1.1.0"
 workRuntimeKtx = "2.10.1"
 room = "2.6.1"
+camerax = "1.4.1"
 ksp = "1.9.22-1.0.17"
 
 [libraries]
@@ -23,10 +25,17 @@ lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx
 material = { module = "com.google.android.material:material", version.ref = "material" }
 navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
 recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+viewpager2 = { module = "androidx.viewpager2:viewpager2", version.ref = "viewpager2" }
 work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+camera-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
+camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+camera-video = { module = "androidx.camera:camera-video", version.ref = "camerax" }
+camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+camera-extensions = { module = "androidx.camera:camera-extensions", version.ref = "camerax" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "gradle" }

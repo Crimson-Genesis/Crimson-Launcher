@@ -613,6 +613,34 @@
                         android:text="@string/off" />
                 </FrameLayout>
 
+                <LinearLayout
+                    android:id="@+id/storageFolderPicker"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical"
+                    android:paddingVertical="8dp">
+
+                    <TextView
+                        style="@style/TextSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/storage_folder"
+                        android:textColor="?attr/primaryColor" />
+
+                    <TextView
+                        android:id="@+id/storageFolderPath"
+                        style="@style/TextSmallBold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:ellipsize="middle"
+                        android:singleLine="true"
+                        tools:text="Internal storage (default)" />
+
+                </LinearLayout>
+
                 <TextView
                     android:id="@+id/backupData"
                     style="@style/TextSmall"
@@ -664,6 +692,40 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="12dp"
+                    android:text="@string/chat"
+                    android:textColor="?attr/primaryColor" />
+
+
+
+                <TextView
+                    android:id="@+id/clearChat"
+                    style="@style/TextSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="8dp"
+                    android:paddingVertical="8dp"
+                    android:text="@string/clear_chat"
+                    android:textColor="?attr/primaryColor" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/rounded_rect_shade_color"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    style="@style/TextLarge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="12dp"
                     android:text="@string/progress_logs"
                     android:textColor="?attr/primaryColor" />
 
@@ -692,33 +754,17 @@
                         android:text="@string/on" />
                 </FrameLayout>
 
-                <LinearLayout
-                    android:id="@+id/logFolderPicker"
-                    android:layout_width="match_parent"
+                <TextView
+                    android:id="@+id/viewLogs"
+                    style="@style/TextSmall"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="12dp"
-                    android:orientation="vertical"
-                    android:paddingVertical="8dp">
+                    android:paddingVertical="8dp"
+                    android:text="@string/view_logs" />
 
-                    <TextView
-                        style="@style/TextSmall"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/log_storage_folder"
-                        android:textColor="?attr/primaryColor" />
 
-                    <TextView
-                        android:id="@+id/logFolderPath"
-                        style="@style/TextSmallBold"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:ellipsize="middle"
-                        android:singleLine="true"
-                        tools:text="Internal storage (default)" />
-
-                </LinearLayout>
 
             </LinearLayout>
 

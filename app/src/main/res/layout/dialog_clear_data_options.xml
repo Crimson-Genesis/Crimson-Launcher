@@ -12,7 +12,41 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
-        android:text="Delete All Data"
+        android:text="Clear Tasks &amp; Chat"
+        android:textColor="#FF5252"
+        android:gravity="center"
+        android:textStyle="bold" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/primaryColor"
+        android:alpha="0.2" />
+
+    <TextView
+        android:id="@+id/btnClearLogsOption"
+        style="@style/TextLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="Clear Progress Logs"
+        android:textColor="#FF5252"
+        android:gravity="center"
+        android:textStyle="bold" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/primaryColor"
+        android:alpha="0.2" />
+
+    <TextView
+        android:id="@+id/btnCleanSlateOption"
+        style="@style/TextLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="Clean Slate (Reset App)"
         android:textColor="#FF5252"
         android:gravity="center"
         android:textStyle="bold" />

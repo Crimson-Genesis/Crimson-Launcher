@@ -14,4 +14,19 @@
         <item name="android:windowBackground">@drawable/rounded_rect_shade_color</item>
         <item name="android:textColorPrimary">?attr/primaryColor</item>
     </style>
+
+    <style name="TransparentDialog" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+    </style>
+
+    <style name="RoundedMedia">
+        <item name="cornerSize">12dp</item>
+        <item name="cornerFamily">rounded</item>
+    </style>
 </resources>

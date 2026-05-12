@@ -14,6 +14,7 @@ import app.olauncher.data.TodoItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -48,7 +49,7 @@ object EventLogger {
                 val logLine = json.toString() + "\n"
                 
                 val dateStr = fileFormat.format(Date(now))
-                val folderUri = prefs.logFolderUri
+                val folderUri = prefs.storageFolderUri
                 
                 var success = false
                 if (!folderUri.isNullOrEmpty()) {
@@ -306,10 +307,13 @@ object EventLogger {
             val tree = DocumentFile.fromTreeUri(context, Uri.parse(treeUri)) ?: return false
             if (!tree.exists() || !tree.canWrite()) return false
 
+            val logsDir = tree.findFile("logs") ?: tree.createDirectory("logs") ?: return false
+            if (!logsDir.exists() || !logsDir.canWrite()) return false
+
             val fileName = "crimson_log_$dateStr.jsonl"
-            var file = tree.findFile(fileName)
+            var file = logsDir.findFile(fileName)
             if (file == null) {
-                file = tree.createFile("application/x-jsonlines", fileName)
+                file = logsDir.createFile("application/x-jsonlines", fileName)
             }
             file?.let {
                 context.contentResolver.openOutputStream(it.uri, "wa")?.use { out ->
@@ -321,5 +325,38 @@ object EventLogger {
             Log.e(TAG, "Failed to write to SAF", e)
             false
         }
+    }
+
+    suspend fun clearLogs(context: Context) = withContext(scope.coroutineContext) {
+        try {
+            // Clear internal logs
+            val dir = File(context.filesDir, LOG_DIR)
+            if (dir.exists()) {
+                dir.deleteRecursively()
+            }
+
+            // Clear SAF logs if configured
+            val prefs = Prefs(context)
+            val folderUri = prefs.storageFolderUri
+            if (!folderUri.isNullOrEmpty()) {
+                val tree = DocumentFile.fromTreeUri(context, Uri.parse(folderUri))
+                if (tree != null && tree.exists()) {
+                    val logsDir = tree.findFile("logs")
+                    if (logsDir != null) {
+                        deleteSafDirectory(logsDir)
+                    }
+                }
+            }
+            Log.d(TAG, "Logs cleared successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to clear logs", e)
+        }
+    }
+
+    private fun deleteSafDirectory(file: DocumentFile) {
+        if (file.isDirectory) {
+            file.listFiles().forEach { deleteSafDirectory(it) }
+        }
+        file.delete()
     }
 }

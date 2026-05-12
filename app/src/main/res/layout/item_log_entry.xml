@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="8dp">
+
+    <TextView
+        android:id="@+id/entryTime"
+        style="@style/TextSmall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="?attr/primaryColor"
+        android:alpha="0.6"
+        tools:text="14:30:05" />
+
+    <TextView
+        android:id="@+id/entryEvent"
+        style="@style/TextMedium"
+        android:textStyle="bold"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="?attr/primaryColor"
+        tools:text="AppOpened" />
+
+    <TextView
+        android:id="@+id/entryData"
+        style="@style/TextSmall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="?attr/primaryColor"
+        android:alpha="0.8"
+        tools:text='{"package": "com.android.settings"}' />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_marginTop="8dp"
+        android:background="?attr/primaryColor"
+        android:alpha="0.1" />
+
+</LinearLayout>

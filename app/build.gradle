@@ -39,7 +39,7 @@ android {
 
     defaultConfig {
         applicationId "app.crimson.launcher"
-        minSdkVersion 24
+        minSdkVersion 26
         targetSdkVersion 35
         versionCode 8
         versionName "1.6"
@@ -115,6 +115,7 @@ dependencies {
     implementation libs.core.ktx
     implementation libs.appcompat
     implementation libs.recyclerview
+    implementation libs.viewpager2
 
     // Android lifecycle
     implementation libs.lifecycle.extensions
@@ -130,5 +131,13 @@ dependencies {
     implementation libs.room.runtime
     implementation libs.room.ktx
     ksp libs.room.compiler
+
+    // CameraX
+    implementation libs.camera.core
+    implementation libs.camera.camera2
+    implementation libs.camera.lifecycle
+    implementation libs.camera.video
+    implementation libs.camera.view
+    implementation libs.camera.extensions
 
 }

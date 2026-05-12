@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/primaryShadeDarkColor"
+    tools:context=".ui.ChatFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingTop="64dp">
+
+        <FrameLayout
+            android:id="@+id/chatContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvChat"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="8dp"
+                tools:listitem="@layout/item_chat_message" />
+
+            <TextView
+                android:id="@+id/tvEmptyState"
+                style="@style/TextMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:alpha="0.4"
+                android:text="@string/no_thoughts"
+                android:visibility="gone"
+                tools:visibility="visible" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/llInputContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:background="@drawable/rounded_rect_shade_color"
+            android:orientation="vertical"
+            android:clipChildren="false"
+            android:padding="4dp">
+
+            <HorizontalScrollView
+                android:id="@+id/hsvMediaPreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingVertical="8dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:id="@+id/llMediaPreviewContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="4dp" />
+            </HorizontalScrollView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etChatInput"
+                    style="@style/TextMedium"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="@string/chat_hint"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:maxLines="6"
+                    android:scrollbars="vertical"
+                    android:importantForAutofill="no"
+                    android:padding="12dp" />
+
+                <ImageView
+                    android:id="@+id/btnCamera"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_camera"
+                    android:contentDescription="Camera"
+                    android:alpha="0.8" />
+
+                <ImageView
+                    android:id="@+id/btnMic"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_mic"
+                    android:contentDescription="Record Audio"
+                    android:alpha="0.8" />
+
+                <ImageView
+                    android:id="@+id/btnSendChat"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_send"
+                    android:contentDescription="@string/send"
+                    android:alpha="0.8" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/llRecordingUi"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvRecordingTimer"
+                    style="@style/TextMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="12dp"
+                    android:text="00:00" />
+
+                <app.olauncher.ui.AudioVisualizerView
+                    android:id="@+id/vAudioVisualizer"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1" />
+
+                <ImageView
+                    android:id="@+id/btnStopRecord"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_check"
+                    android:contentDescription="Stop Recording"
+                    android:alpha="0.8" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/llTopActions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/btnDeleteSelected"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_delete"
+            app:tint="#FF4444"
+            android:contentDescription="@string/delete"
+            android:visibility="gone"
+            android:alpha="0.8" />
+
+        <ImageView
+            android:id="@+id/btnSelectMode"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_check"
+            app:tint="@android:color/white"
+            android:contentDescription="Select"
+            android:alpha="0.8" />
+
+        <ImageView
+            android:id="@+id/btnCalendar"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_calendar"
+            android:contentDescription="Calendar"
+            android:alpha="0.8" />
+    </LinearLayout>
+
+</FrameLayout>

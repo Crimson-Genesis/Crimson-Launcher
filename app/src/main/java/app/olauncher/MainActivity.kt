@@ -28,16 +28,19 @@ import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
 import app.olauncher.data.TodoType
 import app.olauncher.databinding.ActivityMainBinding
+import app.olauncher.helper.BackupManager
 import app.olauncher.helper.DaySummary
 import app.olauncher.helper.EventLogger
 import app.olauncher.helper.LogEvent
 import app.olauncher.helper.TodoNotificationService
+import app.olauncher.data.ChatStorage
 import app.olauncher.helper.generateBackupJson
 import app.olauncher.helper.isDefaultLauncher
 import app.olauncher.helper.isEinkDisplay
 import app.olauncher.helper.parseBackupJson
 import app.olauncher.helper.resetLauncherViaFakeActivity
 import app.olauncher.helper.showLauncherSelector
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -56,7 +59,7 @@ class MainActivity : AppCompatActivity() {
     private var isPickerActive = false
     private var onCreateTimestamp: Long = 0
 
-    private val backupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+    private val backupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         isPickerActive = false
         uri ?: return@registerForActivityResult
         Log.d("Backup", "Activity launcher callback (backup): $uri")
@@ -70,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         performRestoreDirectly(uri)
     }
 
-    private val logFolderLauncher = registerForActivityResult(
+    private val storageFolderLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
         isPickerActive = false
@@ -79,33 +82,35 @@ class MainActivity : AppCompatActivity() {
             uri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         )
-        val old = prefs.logFolderUri
-        prefs.logFolderUri = uri.toString()
+        val old = prefs.storageFolderUri
+        prefs.storageFolderUri = uri.toString()
         EventLogger.log(this, LogEvent.LogFolderChanged(old, uri.toString()))
+        viewModel.loadChatMessages()
     }
 
-    fun launchLogFolderPicker() {
+    fun launchStorageFolderPicker() {
         isPickerActive = true
-        logFolderLauncher.launch(null)
+        storageFolderLauncher.launch(null)
     }
+
+    @Deprecated("Use launchStorageFolderPicker", ReplaceWith("launchStorageFolderPicker()"))
+    fun launchLogFolderPicker() = launchStorageFolderPicker()
+
+    @Deprecated("Use launchStorageFolderPicker", ReplaceWith("launchStorageFolderPicker()"))
+    fun launchChatFolderPicker() = launchStorageFolderPicker()
 
     private fun performBackupDirectly(uri: Uri) {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val items = viewModel.getAllTodoItemsSync()
-                val templates = AppDatabase.getDatabase(this@MainActivity).todoTemplateDao().getAllTemplatesWithItemsSync()
-                Log.d("Backup", "Direct backup: ${items.size} items, ${templates.size} templates")
-                val json = generateBackupJson(this@MainActivity, items, templates)
-                Log.d("Backup", "Direct backup JSON length: ${json.length}")
-                val bytes = json.toByteArray(StandardCharsets.UTF_8)
-                contentResolver.openOutputStream(uri, "wt")?.use { output ->
-                    output.write(bytes)
-                    output.flush()
-                    Log.d("Backup", "Direct backup written successfully")
-                }
-                EventLogger.log(this@MainActivity, LogEvent.BackupCreated(bytes.size.toLong()))
+                val success = BackupManager.performBackup(this@MainActivity, uri)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "Backup saved!", Toast.LENGTH_SHORT).show()
+                    if (success) {
+                        Toast.makeText(this@MainActivity, "Backup saved!", Toast.LENGTH_SHORT).show()
+                        EventLogger.log(this@MainActivity, LogEvent.BackupCreated(0L)) // Size calc moved to BackupManager
+                    } else {
+                        Toast.makeText(this@MainActivity, "Backup failed!", Toast.LENGTH_LONG).show()
+                        EventLogger.log(this@MainActivity, LogEvent.BackupFailed("Unknown error in BackupManager"))
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("Backup", "Direct backup failed", e)
@@ -120,56 +125,21 @@ class MainActivity : AppCompatActivity() {
     private fun performRestoreDirectly(uri: Uri) {
         lifecycleScope.launch(Dispatchers.Main) {
             try {
-                val json = withContext(Dispatchers.IO) {
-                    contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                val success = withContext(Dispatchers.IO) {
+                    BackupManager.performRestore(this@MainActivity, uri)
                 }
-                if (json.isNullOrBlank()) {
-                    Toast.makeText(this@MainActivity, "File is empty or could not be read", Toast.LENGTH_SHORT).show()
-                    EventLogger.log(this@MainActivity, LogEvent.RestoreFailed("File is empty or could not be read"))
-                    return@launch
+                if (success) {
+                    Toast.makeText(this@MainActivity, "Restore successful!", Toast.LENGTH_SHORT).show()
+                    EventLogger.log(this@MainActivity, LogEvent.RestorePerformed(0))
+                    recreate()
+                } else {
+                    Toast.makeText(this@MainActivity, "Restore failed!", Toast.LENGTH_LONG).show()
+                    EventLogger.log(this@MainActivity, LogEvent.RestoreFailed("Unknown error in BackupManager"))
                 }
-
-                val (settings, items, templates) = parseBackupJson(json)
-
-                if (settings == null && items == null && templates == null) {
-                    Toast.makeText(this@MainActivity, "Invalid backup file", Toast.LENGTH_SHORT).show()
-                    EventLogger.log(this@MainActivity, LogEvent.RestoreFailed("Invalid backup file"))
-                    return@launch
-                }
-
-                settings?.let { applySettings(it) }
-
-                if (!items.isNullOrEmpty()) {
-                    viewModel.replaceTodoItems(items)
-                }
-
-                if (!templates.isNullOrEmpty()) {
-                    val firstTemplateId = withContext(Dispatchers.IO) {
-                        val dao = AppDatabase.getDatabase(this@MainActivity).todoTemplateDao()
-                        dao.deleteAllTemplates()
-                        var firstId = -1L
-                        templates.forEach { templateWithItems ->
-                            val id = dao.insertTemplateWithItems(templateWithItems.template, templateWithItems.items)
-                            if (firstId == -1L || templateWithItems.template.name == "Default") {
-                                firstId = id
-                            }
-                        }
-                        firstId
-                    }
-                    
-                    if (firstTemplateId != -1L) {
-                        viewModel.applyTemplate(firstTemplateId)
-                    }
-                }
-                
-                EventLogger.log(this@MainActivity, LogEvent.RestorePerformed(items?.size ?: 0))
-
-                Toast.makeText(this@MainActivity, "Restore complete.", Toast.LENGTH_SHORT).show()
-                recreate()
             } catch (e: Exception) {
-                Log.e("Restore", "Restore error", e)
+                Log.e("Backup", "Direct restore failed", e)
                 EventLogger.log(this@MainActivity, LogEvent.RestoreFailed(e.message ?: "Unknown error"))
-                Toast.makeText(this@MainActivity, "Restore failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, "Restore failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -198,7 +168,7 @@ class MainActivity : AppCompatActivity() {
 
     fun launchRestorePicker() {
         isPickerActive = true
-        restoreLauncher.launch(arrayOf("application/json"))
+        restoreLauncher.launch(arrayOf("application/zip", "application/x-zip-compressed"))
     }
 
     override fun attachBaseContext(newBase: Context) {
@@ -320,6 +290,10 @@ class MainActivity : AppCompatActivity() {
                 prefs.dailyStatsAddedCount = 0
                 prefs.dailyStatsDeletedCount = 0
                 viewModel.resetDailyTasks()
+                
+                // Clear temp media for the day that just ended
+                ChatStorage.clearTempMedia(this@MainActivity, prefs, previousLogicalDay)
+
                 withContext(Dispatchers.Main) {
                     viewModel.refreshTodayList()
                 }
@@ -328,25 +302,6 @@ class MainActivity : AppCompatActivity() {
                 prefs.shownOnDayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
             }
         }
-    }
-
-    private fun isYesterday(timestamp: Long?): Boolean {
-        if (timestamp == null) return false
-        val yesterday = Calendar.getInstance()
-        yesterday.add(Calendar.DAY_OF_YEAR, -1)
-        val date = Calendar.getInstance()
-        date.timeInMillis = timestamp
-        return yesterday.get(Calendar.YEAR) == date.get(Calendar.YEAR) &&
-                yesterday.get(Calendar.DAY_OF_YEAR) == date.get(Calendar.DAY_OF_YEAR)
-    }
-
-    private fun isToday(timestamp: Long?): Boolean {
-        if (timestamp == null) return false
-        val today = Calendar.getInstance()
-        val date = Calendar.getInstance()
-        date.timeInMillis = timestamp
-        return today.get(Calendar.YEAR) == date.get(Calendar.YEAR) &&
-                today.get(Calendar.DAY_OF_YEAR) == date.get(Calendar.DAY_OF_YEAR)
     }
 
     override fun onResume() {
@@ -367,10 +322,6 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         EventLogger.log(this, LogEvent.AppClosed(System.currentTimeMillis() - onCreateTimestamp))
         super.onDestroy()
-    }
-
-    override fun onUserInteraction() {
-        super.onUserInteraction()
     }
 
     override fun onNewIntent(intent: Intent?) {

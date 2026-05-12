@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/camera_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/viewFinder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:paddingBottom="48dp"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:id="@+id/tvRecordingTimer"
+            style="@style/TextLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="00:00"
+            android:textColor="#FF5252"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <RelativeLayout
+            android:id="@+id/rlModeContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:paddingHorizontal="16dp">
+
+            <LinearLayout
+                android:id="@+id/modeSelector"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:orientation="horizontal"
+                android:background="@drawable/rounded_rect_shade_color"
+                android:padding="4dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvPhotoMode"
+                    style="@style/TextMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/photo"
+                    android:textColor="@android:color/white"
+                    android:alpha="1.0" />
+
+                <TextView
+                    android:id="@+id/tvVideoMode"
+                    style="@style/TextMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/video"
+                    android:textColor="@android:color/white"
+                    android:alpha="0.5" />
+
+                <TextView
+                    android:id="@+id/tvCaptureCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/circle_white"
+                    android:minWidth="24dp"
+                    android:minHeight="24dp"
+                    android:gravity="center"
+                    android:padding="2dp"
+                    android:textColor="@android:color/black"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:text="1"
+                    tools:visibility="visible" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btnFlipCamera"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_centerVertical="true"
+                android:padding="10dp"
+                android:src="@drawable/ic_flip_camera"
+                app:tint="@android:color/white"
+                android:contentDescription="@string/flip_camera" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp">
+
+            <FrameLayout
+                android:id="@+id/flCapture"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_centerInParent="true">
+
+                <View
+                    android:id="@+id/btnMainCapture"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/circle_white" />
+
+                <ImageView
+                    android:id="@+id/ivCaptureIcon"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_camera"
+                    app:tint="@android:color/black"
+                    android:contentDescription="@string/capture" />
+            </FrameLayout>
+
+            <ImageView
+                android:id="@+id/btnGallery"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_centerVertical="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_gallery"
+                android:contentDescription="Gallery"
+                android:background="@drawable/rounded_rect_shade_color"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/btnDone"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_centerVertical="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_check"
+                android:contentDescription="@string/okay"
+                android:background="@drawable/rounded_rect_shade_color"
+                android:visibility="gone" />
+        </RelativeLayout>
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/rlTopBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="32dp"
+        android:paddingHorizontal="16dp">
+
+        <ImageView
+            android:id="@+id/btnClose"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_close"
+            app:tint="@android:color/white"
+            android:contentDescription="@string/close" />
+    </RelativeLayout>
+
+    <ProgressBar
+        android:id="@+id/pbFinalizing"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:elevation="20dp"
+        android:visibility="gone" />
+
+</FrameLayout>

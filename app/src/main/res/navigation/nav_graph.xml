@@ -20,6 +20,9 @@
             android:id="@+id/action_mainFragment_to_todoFragment"
             app:destination="@id/todoFragment" />
         <action
+            android:id="@+id/action_mainFragment_to_chatFragment"
+            app:destination="@id/chatFragment" />
+        <action
             android:id="@+id/action_mainFragment_to_rightPageFragment"
             app:destination="@id/rightPageFragment" />
     </fragment>
@@ -33,9 +36,34 @@
             android:id="@+id/action_todoFragment_to_mainFragment"
             app:destination="@id/mainFragment" />
         <action
+            android:id="@+id/action_todoFragment_to_chatFragment"
+            app:destination="@id/chatFragment" />
+        <action
             android:id="@+id/action_todoFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/chatFragment"
+        android:name="app.olauncher.ui.ChatFragment"
+        android:label="ChatFragment"
+        tools:layout="@layout/fragment_chat">
+        <action
+            android:id="@+id/action_chatFragment_to_mainFragment"
+            app:destination="@id/mainFragment" />
+        <action
+            android:id="@+id/action_chatFragment_to_todoFragment"
+            app:destination="@id/todoFragment" />
+        <action
+            android:id="@+id/action_chatFragment_to_cameraFragment"
+            app:destination="@id/cameraFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/cameraFragment"
+        android:name="app.olauncher.ui.CameraFragment"
+        android:label="CameraFragment"
+        tools:layout="@layout/fragment_camera" />
 
     <fragment
         android:id="@+id/rightPageFragment"
@@ -75,6 +103,32 @@
         <action
             android:id="@+id/action_settingsFragment_to_appListFragment"
             app:destination="@id/appListFragment" />
+        <action
+            android:id="@+id/action_settingsFragment_to_logsFragment"
+            app:destination="@id/logsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/logsFragment"
+        android:name="app.olauncher.ui.LogsFragment"
+        android:label="LogsFragment"
+        tools:layout="@layout/fragment_logs">
+        <action
+            android:id="@+id/action_logsFragment_to_logDetailFragment"
+            app:destination="@id/logDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/logDetailFragment"
+        android:name="app.olauncher.ui.LogDetailFragment"
+        android:label="LogDetailFragment"
+        tools:layout="@layout/fragment_log_detail">
+        <argument
+            android:name="logUri"
+            app:argType="string" />
+        <argument
+            android:name="logFileName"
+            app:argType="string" />
     </fragment>
 
 </navigation>

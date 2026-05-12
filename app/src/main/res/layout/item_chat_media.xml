@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="4dp">
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/ivMedia"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:scaleType="centerCrop"
+        android:background="@drawable/rounded_rect_shade_color"
+        app:shapeAppearanceOverlay="@style/RoundedMedia"
+        app:strokeColor="@android:color/white"
+        app:strokeWidth="1dp"
+        android:contentDescription="@string/chat_media"
+        android:clickable="false"
+        android:focusable="false" />
+
+    <ImageView
+        android:id="@+id/ivPlayVideo"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center"
+        android:src="@android:drawable/ic_media_play"
+        android:visibility="gone"
+        android:contentDescription="@string/play_video"
+        android:clickable="false"
+        android:focusable="false" />
+
+    <ImageView
+        android:id="@+id/ivAudio"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center"
+        android:src="@drawable/ic_mic"
+        android:visibility="gone"
+        android:contentDescription="Audio"
+        android:clickable="false"
+        android:focusable="false" />
+
+    <ImageView
+        android:id="@+id/ivSelected"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="8dp"
+        android:src="@drawable/ic_check"
+        android:background="@drawable/circle_white"
+        android:padding="4dp"
+        android:visibility="gone"
+        android:contentDescription="@string/okay"
+        app:tint="@android:color/black" />
+</FrameLayout>

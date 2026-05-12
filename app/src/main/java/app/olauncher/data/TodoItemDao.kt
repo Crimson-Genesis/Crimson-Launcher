@@ -11,6 +11,9 @@ import androidx.room.Update
 interface TodoItemDao {
     @Insert
     suspend fun insert(todoItem: TodoItem): Long
+    
+    @Insert
+    suspend fun insertAll(todoItems: List<TodoItem>)
 
     @Update
     suspend fun update(todoItem: TodoItem)

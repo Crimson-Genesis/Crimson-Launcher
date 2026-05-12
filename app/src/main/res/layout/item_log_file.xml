@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/logFileItemLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="16dp"
+    android:paddingHorizontal="8dp"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <TextView
+        android:id="@+id/logFileName"
+        style="@style/TextMedium"
+        android:textStyle="bold"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="?attr/primaryColor"
+        tools:text="crimson_log_2023-10-27.jsonl"
+        tools:gravity="start" />
+
+    <TextView
+        android:id="@+id/logFileInfo"
+        style="@style/TextSmall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="?attr/primaryColor"
+        android:alpha="0.6"
+        tools:text="Oct 27, 2023 14:30 • 12KB • External"
+        tools:gravity="start" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_marginTop="16dp"
+        android:background="?attr/primaryColor"
+        android:alpha="0.1" />
+
+</LinearLayout>

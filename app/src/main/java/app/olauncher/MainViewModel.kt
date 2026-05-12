@@ -5,9 +5,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
+import android.net.Uri
 import android.os.Build
 import android.os.UserHandle
 import android.util.Log
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -15,6 +17,8 @@ import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
 import app.olauncher.data.AppDatabase
 import app.olauncher.data.AppModel
+import app.olauncher.data.ChatMessage
+import app.olauncher.data.ChatStorage
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
 import app.olauncher.data.TodoItem
@@ -32,6 +36,7 @@ import app.olauncher.helper.formattedTimeSpent
 import app.olauncher.helper.getAppsList
 import app.olauncher.helper.isCrimsonDefault as isCrimsonDefaultHelper
 import app.olauncher.helper.usageStats.EventLogWrapper
+import androidx.lifecycle.asLiveData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -39,14 +44,12 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val appContext by lazy { application.applicationContext }
     private val prefs = Prefs(appContext)
     private val launcherApps by lazy { appContext.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps }
-    private val resetMutex = Mutex()
 
     val firstOpen = MutableLiveData<Boolean>()
     val toggleDateTime = MutableLiveData<Unit>()
@@ -58,6 +61,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val homeAppAlignment = MutableLiveData<Int>()
     val screenTimeValue = MutableLiveData<String>()
 
+    private val database = AppDatabase.getDatabase(application)
+    
+    private val _chatMessages = MutableLiveData<List<ChatMessage>>()
+    val chatMessages: LiveData<List<ChatMessage>> = _chatMessages
+
     val showDialog = SingleLiveEvent<String>()
     val checkForMessages = SingleLiveEvent<Unit?>()
     val resetLauncherLiveData = SingleLiveEvent<Unit?>()
@@ -68,7 +76,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var cachedHiddenApps: List<AppModel>? = null
 
     // Todo list properties
-    private val database = AppDatabase.getDatabase(application)
     private val repository = TodoItemRepository(database.todoItemDao())
     private val templateRepository = TodoTemplateRepository(database.todoTemplateDao())
     
@@ -149,7 +156,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         launcherApps.unregisterCallback(appCallback)
     }
 
-    private fun checkAndInsertDefaultTemplate() = viewModelScope.launch(Dispatchers.IO) {
+    private suspend fun checkAndInsertDefaultTemplateSync() = withContext(Dispatchers.IO) {
         val templates = templateRepository.getAllTemplatesSync()
         if (templates.isEmpty()) {
             val defaultTemplate = TodoTemplate(name = "Default")
@@ -168,74 +175,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun checkAndInsertDefaultTemplate() = viewModelScope.launch(Dispatchers.IO) {
+        checkAndInsertDefaultTemplateSync()
+    }
+
     suspend fun getAllTodoItemsSync(): List<TodoItem> = withContext(Dispatchers.IO) {
         repository.getAllTodoItemsSync()
     }
 
     suspend fun getTodoItemById(id: Long): TodoItem? = withContext(Dispatchers.IO) {
         repository.getById(id)
-    }
-
-    fun checkAndPerformMidnightReset() {
-        viewModelScope.launch(Dispatchers.IO) {
-            resetMutex.withLock {
-                val currentLogicalDay = prefs.getLogicalDayKey(System.currentTimeMillis())
-                val lastReset = prefs.lastResetDayKey
-                
-                if (lastReset == null) {
-                    prefs.lastResetDayKey = currentLogicalDay
-                    return@withLock
-                }
-
-                if (lastReset != currentLogicalDay) {
-                    Log.d("Midnight", "New logical day detected: $currentLogicalDay (previously $lastReset). Resetting daily tasks.")
-                    
-                    val allItems = repository.getAllTodoItemsSync()
-                    
-                    val completedYesterdayCount = allItems.count { it.isCompleted && it.completedAt != null && prefs.getLogicalDayKey(it.completedAt) == lastReset }
-                    val totalYesterday = allItems.count { 
-                        it.type == TodoType.DAILY || (it.type == TodoType.TIMED && it.dueDate != null && prefs.getLogicalDayKey(it.dueDate) == lastReset)
-                    }
-                    val dailyTasks = allItems.filter { it.type == TodoType.DAILY }
-                    val dailyCompleted = dailyTasks.count { it.isCompleted }
-                    val timedOverdue = allItems.count { 
-                        it.type == TodoType.TIMED && !it.isCompleted && (it.dueDate ?: 0) < System.currentTimeMillis() && prefs.getLogicalDayKey(it.dueDate ?: 0) != lastReset && prefs.getLogicalDayKey(it.dueDate ?: 0) != currentLogicalDay
-                    }
-
-                    if (completedYesterdayCount > 0) {
-                        prefs.currentStreakDays++
-                        prefs.lastCompletionDate = lastReset
-                    } else {
-                        prefs.currentStreakDays = 0
-                    }
-
-                    val summary = DaySummary(
-                        completedToday = completedYesterdayCount,
-                        totalToday = totalYesterday,
-                        completionRate = if (totalYesterday > 0) completedYesterdayCount.toDouble() / totalYesterday else 0.0,
-                        dailyTasksCompleted = dailyCompleted,
-                        dailyTasksTotal = dailyTasks.size,
-                        timedOverdue = timedOverdue,
-                        deletedToday = prefs.dailyStatsDeletedCount,
-                        addedToday = prefs.dailyStatsAddedCount,
-                        streak = prefs.currentStreakDays
-                    )
-
-                    EventLogger.log(appContext, LogEvent.DayReset(summary))
-                    
-                    prefs.dailyStatsAddedCount = 0
-                    prefs.dailyStatsDeletedCount = 0
-                    
-                    database.todoItemDao().resetDailyTasks()
-                    
-                    prefs.lastResetDayKey = currentLogicalDay
-                    prefs.shownOnDayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
-                }
-                
-                // Always trigger refresh at the end of the check, even if reset didn't happen
-                refreshTodayList()
-            }
-        }
     }
 
     fun resetDailyTasks() = viewModelScope.launch(Dispatchers.IO) {
@@ -336,27 +285,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteAllTodoItems() = viewModelScope.launch(Dispatchers.IO) {
         repository.deleteAll()
+        refreshTodayList()
+    }
+
+    fun clearAllTaskAndChat() = viewModelScope.launch(Dispatchers.IO) {
+        // Clear tasks and templates
+        repository.deleteAll()
+        database.todoTemplateDao().deleteAllTemplates()
+        refreshTodayList()
         
-        val templateDao = database.todoTemplateDao()
+        // Clear chat
+        ChatStorage.clearAllMessages(appContext!!, prefs)
+        loadChatMessages()
         
-        // Delete all templates
-        templateDao.deleteAllTemplates()
-        
-        // Reset active boiler to none
-        prefs.activeBoilerId = -1L
-        prefs.activeBoilerName = "Default"
-        _activeBoilerName.postValue("Default")
-        activeBoilerId.postValue(-1L)
-        
-        // Insert a new Default template
-        val defaultTemplate = TodoTemplate(name = "Default")
-        val newDefaultId = templateDao.insertTemplateWithItems(defaultTemplate, emptyList())
-        
-        // Set new Default as active
-        prefs.activeBoilerId = newDefaultId
-        prefs.activeBoilerName = "Default"
-        _activeBoilerName.postValue("Default")
-        activeBoilerId.postValue(newDefaultId)
+        // Re-initialize default state
+        checkAndInsertDefaultTemplate()
     }
 
     suspend fun replaceTodoItems(items: List<TodoItem>) = withContext(Dispatchers.IO) {
@@ -666,5 +609,83 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val displayValue = "$formattedTime   [${result.unlocks}]"
             screenTimeValue.postValue(displayValue)
         }
+    }
+
+    fun loadChatMessages() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val messages = ChatStorage.loadAllMessages(appContext!!, prefs)
+            _chatMessages.postValue(messages)
+        }
+    }
+
+    fun saveChatMessage(message: ChatMessage) {
+        viewModelScope.launch(Dispatchers.IO) {
+            ChatStorage.saveMessage(appContext!!, prefs, message)
+            loadChatMessages()
+        }
+    }
+
+    fun updateChatMessage(oldMessage: ChatMessage, newText: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            ChatStorage.saveMessage(appContext!!, prefs, oldMessage.copy(text = newText))
+            loadChatMessages()
+        }
+    }
+
+    fun deleteChatMessage(message: ChatMessage) {
+        viewModelScope.launch(Dispatchers.IO) {
+            ChatStorage.deleteMessage(appContext!!, prefs, message)
+            loadChatMessages()
+        }
+    }
+
+    fun deleteChatMessages(messages: List<ChatMessage>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            messages.forEach { msg ->
+                ChatStorage.deleteMessage(appContext!!, prefs, msg)
+            }
+            loadChatMessages()
+        }
+    }
+
+    fun clearAllChat() {
+        viewModelScope.launch(Dispatchers.IO) {
+            ChatStorage.clearAllMessages(appContext!!, prefs)
+            loadChatMessages()
+        }
+    }
+
+    suspend fun cleanSlateSync() = withContext(Dispatchers.IO) {
+        // 1. Clear logs (using current prefs for SAF)
+        EventLogger.clearLogs(appContext)
+
+        // 2. Clear chat (using current prefs for SAF)
+        ChatStorage.clearAllMessages(appContext, prefs)
+        
+        // 3. Clear any other files in storage (like backup.conf)
+        val storageUri = prefs.storageFolderUri
+        if (!storageUri.isNullOrEmpty()) {
+            try {
+                val tree = DocumentFile.fromTreeUri(appContext, Uri.parse(storageUri))
+                tree?.findFile("backup.conf")?.delete()
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Failed to delete backup.conf during clean slate", e)
+            }
+        }
+
+        // 4. Clear database
+        database.clearAllTables()
+        
+        // 5. Clear preferences (this wipes storageFolderUri)
+        prefs.clearAll()
+        
+        // 6. Re-initialize default state if needed
+        checkAndInsertDefaultTemplateSync()
+        
+        loadChatMessages()
+    }
+
+    fun cleanSlate() = viewModelScope.launch(Dispatchers.IO) {
+        cleanSlateSync()
     }
 }

@@ -56,6 +56,8 @@ class Prefs(context: Context) {
     private val IS_SHORTCUT_SWIPE_RIGHT = "IS_SHORTCUT_SWIPE_RIGHT"
 
     private val LOG_FOLDER_URI = "LOG_FOLDER_URI"
+    private val CHAT_FOLDER_URI = "CHAT_FOLDER_URI"
+    private val STORAGE_FOLDER_URI = "STORAGE_FOLDER_URI"
     private val DAILY_STATS_ADDED_COUNT = "DAILY_STATS_ADDED_COUNT"
     private val DAILY_STATS_DELETED_COUNT = "DAILY_STATS_DELETED_COUNT"
     private val CURRENT_STREAK_DAYS = "CURRENT_STREAK_DAYS"
@@ -237,9 +239,17 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean(IS_SHORTCUT_SWIPE_RIGHT, false)
         set(value) = prefs.edit().putBoolean(IS_SHORTCUT_SWIPE_RIGHT, value).apply()
 
+    var storageFolderUri: String?
+        get() = prefs.getString(STORAGE_FOLDER_URI, null) ?: prefs.getString(CHAT_FOLDER_URI, null) ?: prefs.getString(LOG_FOLDER_URI, null)
+        set(value) = prefs.edit { putString(STORAGE_FOLDER_URI, value).apply() }
+
     var logFolderUri: String?
-        get() = prefs.getString(LOG_FOLDER_URI, null)
-        set(value) = prefs.edit { putString(LOG_FOLDER_URI, value).apply() }
+        get() = storageFolderUri
+        set(value) = prefs.edit { putString(STORAGE_FOLDER_URI, value).apply() }
+
+    var chatFolderUri: String?
+        get() = storageFolderUri
+        set(value) = prefs.edit { putString(STORAGE_FOLDER_URI, value).apply() }
 
     var dailyStatsAddedCount: Int
         get() = prefs.getInt(DAILY_STATS_ADDED_COUNT, 0)
@@ -300,4 +310,8 @@ class Prefs(context: Context) {
     fun getAppRenameLabel(appPackage: String): String = prefs.getString(appPackage, "").toString()
 
     fun setAppRenameLabel(appPackage: String, renameLabel: String) = prefs.edit().putString(appPackage, renameLabel).apply()
+
+    fun clearAll() {
+        prefs.edit().clear().apply()
+    }
 }

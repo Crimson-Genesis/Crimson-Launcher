@@ -36,7 +36,7 @@ class ClearDataConfirmDialogFragment : DialogFragment() {
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
 
         binding.btnReallyDelete.setOnClickListener {
-            viewModel.deleteAllTodoItems()
+            viewModel.clearAllTaskAndChat()
             requireContext().showToast(R.string.todo_data_cleared)
             dismiss()
         }

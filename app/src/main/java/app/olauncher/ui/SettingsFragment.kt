@@ -4,7 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.TimePickerDialog
 import android.content.pm.PackageManager
-import android.net.Uri
+import androidx.core.net.toUri
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
@@ -25,6 +25,7 @@ import app.olauncher.BuildConfig
 import app.olauncher.MainActivity
 import app.olauncher.MainViewModel
 import app.olauncher.R
+import app.olauncher.data.ChatStorage
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
 import app.olauncher.databinding.FragmentSettingsBinding
@@ -72,7 +73,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         populateStatusBar()
         populateDateTime()
         populateSwipeDownAction()
-        populateLogFolderPath()
+        populateStorageFolderPath()
         populateLoggingToggle()
         populateHardcoreMode()
         populateDailyResetTime()
@@ -148,7 +149,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             R.id.search -> updateSwipeDownAction(Constants.SwipeDownAction.SEARCH)
             
             R.id.backupData -> {
-                (requireActivity() as MainActivity).launchBackupPicker("crimson_launcher_backup.json")
+                (requireActivity() as MainActivity).launchBackupPicker("crimson_launcher_backup.zip")
             }
             R.id.restoreData -> {
                 (requireActivity() as MainActivity).launchRestorePicker()
@@ -156,8 +157,14 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             R.id.clearTodoData -> {
                 ClearDataOptionsDialogFragment().show(parentFragmentManager, "clear_data_options")
             }
-            R.id.logFolderPicker -> {
-                (requireActivity() as MainActivity).launchLogFolderPicker()
+            R.id.storageFolderPicker -> {
+                (requireActivity() as MainActivity).launchStorageFolderPicker()
+            }
+            R.id.viewLogs -> {
+                findNavController().navigate(R.id.logsFragment)
+            }
+            R.id.clearChat -> {
+                ClearChatConfirmDialogFragment().show(parentFragmentManager, "clear_chat_confirm")
             }
             R.id.loggingToggle -> toggleLogging()
             R.id.hardcoreMode -> toggleHardcoreMode()
@@ -197,11 +204,13 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         binding.restoreData.setOnClickListener(this)
         binding.clearTodoData.setOnClickListener(this)
 
-        binding.logFolderPicker.setOnClickListener(this)
+        binding.storageFolderPicker?.setOnClickListener(this)
+        binding.viewLogs?.setOnClickListener(this)
+        binding.clearChat?.setOnClickListener(this)
         binding.loggingToggle.setOnClickListener(this)
         binding.hardcoreMode.setOnClickListener(this)
         binding.dailyResetTime.setOnClickListener(this)
-        binding.lockscreenTodoToggle?.setOnClickListener(this)
+        binding.lockscreenTodoToggle.setOnClickListener(this)
 
         binding.alignment.setOnLongClickListener(this)
     }
@@ -361,12 +370,14 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         EventLogger.log(requireContext(), LogEvent.SettingsChanged("swipe_down_action", swipeDownFor))
     }
 
-    private fun populateLogFolderPath() {
-        val uriStr = prefs.logFolderUri
-        binding.logFolderPath.text = if (uriStr == null) {
+
+
+    private fun populateStorageFolderPath() {
+        val uriStr = prefs.storageFolderUri
+        binding.storageFolderPath?.text = if (uriStr == null) {
             "Internal storage (default)"
         } else {
-            val uri = Uri.parse(uriStr)
+            val uri = uriStr.toUri()
             val documentFile = DocumentFile.fromTreeUri(requireContext(), uri)
             documentFile?.name ?: uri.path ?: uriStr
         }
@@ -456,13 +467,13 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     private fun populateLockscreenTodo() {
-        binding.lockscreenTodoToggle?.text = if (prefs.showLockscreenTodo) getString(R.string.on)
+        binding.lockscreenTodoToggle.text = if (prefs.showLockscreenTodo) getString(R.string.on)
         else getString(R.string.off)
     }
 
     override fun onResume() {
         super.onResume()
-        populateLogFolderPath()
+        populateStorageFolderPath()
     }
 
     override fun onDestroyView() {

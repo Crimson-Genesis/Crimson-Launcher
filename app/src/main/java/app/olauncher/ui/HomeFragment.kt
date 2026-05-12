@@ -247,17 +247,21 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         val adapter = ChecklistAdapter(
             items = emptyList(),
             prefs = prefs,
-            onLongClickListener = { item -> showTaskOptions(item) }
+            onEditClickListener = { item ->
+                EditTaskDialogFragment.newInstance(item).show(parentFragmentManager, "edit_task")
+            },
+            onCopyClickListener = { item ->
+                viewModel.copyTaskEvent.postValue(item)
+            },
+            onDeleteClickListener = { item ->
+                viewModel.delete(item)
+            }
         ) { todoItem, isChecked ->
             todoItem.isCompleted = isChecked
             viewModel.update(todoItem)
         }
         binding.checklist.adapter = adapter
         binding.checklist.layoutManager = LinearLayoutManager(requireContext())
-    }
-
-    private fun showTaskOptions(item: TodoItem) {
-        TaskOptionsDialogFragment.newInstance(item).show(childFragmentManager, "task_options")
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -270,7 +274,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
 
             override fun onSwipeRight() {
                 super.onSwipeRight()
-                findNavController().navigate(R.id.action_mainFragment_to_todoFragment)
+                findNavController().navigate(R.id.action_mainFragment_to_chatFragment)
             }
 
             override fun onSwipeUp() {

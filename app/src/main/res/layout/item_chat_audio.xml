@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/rounded_rect_shade_color"
+    android:padding="8dp"
+    android:minWidth="250dp"
+    android:layout_marginBottom="4dp">
+
+    <ImageView
+        android:id="@+id/btnPlayPauseAudio"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_play_white"
+        android:background="@drawable/circle_white"
+        app:tint="@android:color/black"
+        android:contentDescription="Play/Pause" />
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_weight="1"
+        android:layout_marginHorizontal="8dp">
+
+        <app.olauncher.ui.AudioVisualizerView
+            android:id="@+id/vPlaybackVisualizer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <SeekBar
+            android:id="@+id/sbAudioProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:progressDrawable="@android:color/transparent"
+            android:thumb="@null"
+            android:splitTrack="false"
+            android:max="100" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/tvAudioDuration"
+        style="@style/TextSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="00:00" />
+
+</LinearLayout>

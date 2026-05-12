@@ -8,8 +8,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.lifecycleScope
 import app.olauncher.databinding.DialogClearDataOptionsBinding
+import app.olauncher.helper.EventLogger
 import app.olauncher.helper.dpToPx
+import app.olauncher.helper.showToast
+import kotlinx.coroutines.launch
 
 class ClearDataOptionsDialogFragment : DialogFragment() {
 
@@ -30,6 +34,19 @@ class ClearDataOptionsDialogFragment : DialogFragment() {
 
         binding.btnClearAllOption.setOnClickListener {
             ClearDataConfirmDialogFragment().show(parentFragmentManager, "clear_data_confirm")
+            dismiss()
+        }
+
+        binding.btnClearLogsOption.setOnClickListener {
+            lifecycleScope.launch {
+                EventLogger.clearLogs(requireContext())
+                requireContext().showToast("Logs cleared")
+            }
+            dismiss()
+        }
+
+        binding.btnCleanSlateOption.setOnClickListener {
+            CleanSlateConfirmDialogFragment().show(parentFragmentManager, "clean_slate_confirm")
             dismiss()
         }
     }

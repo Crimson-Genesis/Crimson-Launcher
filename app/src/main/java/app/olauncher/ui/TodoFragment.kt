@@ -94,25 +94,24 @@ class TodoFragment : Fragment() {
     private fun setupManageDailyRecyclerView() {
         manageDailyAdapter = ManageDailyAdapter(
             items = emptyList(),
-            onItemClick = { todoItem ->
+            onEditClick = { todoItem ->
                 if (editingItem?.id == todoItem.id) {
                     exitEditMode()
                 } else {
                     enterEditMode(todoItem)
                 }
             },
-            onItemLongClick = { todoItem ->
-                showTaskOptions(todoItem)
+            onCopyClick = { todoItem ->
+                copyToForm(todoItem)
+            },
+            onDeleteClick = { todoItem ->
+                viewModel.delete(todoItem)
             }
         )
         binding.rvDailyTasks.apply {
             adapter = manageDailyAdapter
             layoutManager = LinearLayoutManager(requireContext())
         }
-    }
-
-    private fun showTaskOptions(item: TodoItem) {
-        TaskOptionsDialogFragment.newInstance(item, showEdit = false).show(childFragmentManager, "task_options")
     }
 
     private fun enterEditMode(item: TodoItem) {
@@ -344,7 +343,7 @@ class TodoFragment : Fragment() {
         val swipeTouchListener = object : OnSwipeTouchListener(requireContext()) {
             override fun onSwipeLeft() {
                 super.onSwipeLeft()
-                findNavController().navigate(R.id.action_todoFragment_to_mainFragment)
+                findNavController().navigate(R.id.action_todoFragment_to_chatFragment)
             }
 
             override fun onSwipeRight() {

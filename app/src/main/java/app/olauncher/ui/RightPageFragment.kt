@@ -45,7 +45,15 @@ class RightPageFragment : Fragment() {
         val completedAdapter = ChecklistAdapter(
             items = emptyList(),
             prefs = prefs,
-            onLongClickListener = { item -> showTaskOptions(item, showEdit = false) }
+            onEditClickListener = { item ->
+                EditTaskDialogFragment.newInstance(item).show(parentFragmentManager, "edit_task")
+            },
+            onCopyClickListener = { item ->
+                viewModel.copyTaskEvent.postValue(item)
+            },
+            onDeleteClickListener = { item ->
+                viewModel.delete(item)
+            }
         ) { todoItem, isChecked ->
             todoItem.isCompleted = isChecked
             viewModel.update(todoItem)
@@ -56,7 +64,15 @@ class RightPageFragment : Fragment() {
         val upcomingAdapter = ChecklistAdapter(
             items = emptyList(),
             prefs = prefs,
-            onLongClickListener = { item -> showTaskOptions(item, showEdit = true) }
+            onEditClickListener = { item ->
+                EditTaskDialogFragment.newInstance(item).show(parentFragmentManager, "edit_task")
+            },
+            onCopyClickListener = { item ->
+                viewModel.copyTaskEvent.postValue(item)
+            },
+            onDeleteClickListener = { item ->
+                viewModel.delete(item)
+            }
         ) { todoItem, isChecked ->
             todoItem.isCompleted = isChecked
             viewModel.update(todoItem)
@@ -75,10 +91,6 @@ class RightPageFragment : Fragment() {
         })
 
         initSwipeListener()
-    }
-
-    private fun showTaskOptions(item: TodoItem, showEdit: Boolean) {
-        TaskOptionsDialogFragment.newInstance(item, showEdit).show(childFragmentManager, "task_options")
     }
 
     private fun updateSectionVisibility(

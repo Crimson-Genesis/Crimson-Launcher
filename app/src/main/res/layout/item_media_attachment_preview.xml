@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <FrameLayout
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_margin="14dp">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivMediaPreview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:background="@drawable/rounded_rect_shade_color"
+            app:shapeAppearanceOverlay="@style/RoundedMedia"
+            app:strokeColor="@android:color/white"
+            app:strokeWidth="1dp"
+            android:contentDescription="@string/chat_media" />
+
+            <ImageView
+                android:id="@+id/ivPlayPreview"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_media_play"
+                android:contentDescription="@string/play_video"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/ivAudioPreview"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_mic"
+                android:contentDescription="Audio"
+                android:visibility="gone" />
+        </FrameLayout>
+
+    <ImageView
+        android:id="@+id/btnRemoveMedia"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="top|end"
+        android:background="@drawable/circle_white"
+        android:padding="6dp"
+        android:src="@drawable/ic_close"
+        app:tint="@android:color/black"
+        android:elevation="8dp"
+        android:contentDescription="@string/delete" />
+
+</FrameLayout>

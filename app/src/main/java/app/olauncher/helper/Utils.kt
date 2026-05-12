@@ -8,6 +8,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.content.res.Configuration
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.net.Uri
 import android.os.Build
 import android.os.UserHandle
 import android.os.UserManager
@@ -20,6 +21,7 @@ import androidx.core.net.toUri
 import app.olauncher.BuildConfig
 import app.olauncher.R
 import app.olauncher.data.AppModel
+import app.olauncher.data.ChatMessage
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
 import app.olauncher.data.TodoItem
@@ -31,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.text.Collator
 
 fun Context.showToast(message: String?, duration: Int = Toast.LENGTH_SHORT) {
@@ -289,11 +292,23 @@ fun Context.deletePinnedShortcut(packageName: String, shortcutIdToDelete: String
     }
 }
 
-fun generateBackupJson(context: Context, items: List<TodoItem>, templates: List<TodoTemplateWithItems> = emptyList()): String {
-    Log.d("BackupLog", "generateBackupJson started with ${items.size} items and ${templates.size} templates")
+data class BackupData(
+    val settings: Map<String, Any>? = null,
+    val todoItems: List<TodoItem>? = null,
+    val templates: List<TodoTemplateWithItems>? = null,
+    val chatMessages: List<ChatMessage>? = null
+)
+
+fun generateBackupJson(
+    context: Context,
+    items: List<TodoItem>,
+    templates: List<TodoTemplateWithItems> = emptyList(),
+    chatMessages: List<ChatMessage> = emptyList()
+): String {
+    Log.d("BackupLog", "generateBackupJson started with ${items.size} items, ${templates.size} templates, ${chatMessages.size} chat messages")
     return try {
         val root = JSONObject()
-        root.put("version", 2)
+        root.put("version", 3)
         root.put("timestamp", System.currentTimeMillis())
 
         // Export Settings from SharedPreferences
@@ -349,6 +364,20 @@ fun generateBackupJson(context: Context, items: List<TodoItem>, templates: List<
         }
         root.put("todo_templates", templatesArray)
 
+        // Export Chat Messages
+        val chatArray = JSONArray()
+        chatMessages.forEach { msg ->
+            runCatching {
+                chatArray.put(JSONObject().apply {
+                    put("id", msg.id)
+                    put("text", msg.text)
+                    put("isUser", msg.isUser)
+                    put("timestamp", msg.timestamp)
+                })
+            }.onFailure { Log.e("BackupLog", "Skipping chat msg id=${msg.id}", it) }
+        }
+        root.put("chat_messages", chatArray)
+
         val jsonString = root.toString(4)
         Log.d("BackupLog", "JSON generation complete. Length: ${jsonString.length}")
         jsonString
@@ -392,7 +421,7 @@ private fun serializeTemplateItem(item: TodoTemplateItem): JSONObject {
     }
 }
 
-fun parseBackupJson(jsonString: String): Triple<Map<String, Any>?, List<TodoItem>?, List<TodoTemplateWithItems>?> {
+fun parseBackupJson(jsonString: String): BackupData {
     return try {
         val root = JSONObject(jsonString)
         val settingsMap = mutableMapOf<String, Any>()
@@ -440,7 +469,7 @@ fun parseBackupJson(jsonString: String): Triple<Map<String, Any>?, List<TodoItem
             }
         }
 
-        Triple(settingsMap, items, templates)
+        BackupData(settingsMap, items, templates, null)
     } catch (_: Exception) {
         try {
             val items = mutableListOf<TodoItem>()
@@ -448,10 +477,10 @@ fun parseBackupJson(jsonString: String): Triple<Map<String, Any>?, List<TodoItem
             for (i in 0 until jsonArray.length()) {
                 items.add(parseTodoItem(jsonArray.getJSONObject(i)))
             }
-            Triple(null, items, null)
+            BackupData(todoItems = items)
         } catch (e2: Exception) {
             Log.e("Backup", "Error importing data", e2)
-            Triple(null, null, null)
+            BackupData()
         }
     }
 }

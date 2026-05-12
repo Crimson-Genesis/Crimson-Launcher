@@ -38,7 +38,7 @@
     <string name="left">Left</string>
     <string name="right">Right</string>
     <string name="center">Center</string>
-    <string name="home_layout_alignment">App alignment</string>
+    <string name="home_layout_alignment">Alignment</string>
     <string name="swipe_left_app">Swipe left app</string>
     <string name="swipe_right_app">Swipe right app</string>
     <string name="_0">0</string>
@@ -132,7 +132,9 @@
     <string name="todo_data_cleared">Clean slate applied</string>
     <string name="progress_logs">Progress Logs</string>
     <string name="logging_enabled">Logging Enabled</string>
+    <string name="view_logs">View Logs</string>
     <string name="log_storage_folder">Log Storage Folder</string>
+    <string name="storage_folder">Storage Folder</string>
     <string name="hardcore_mode">Hardcore Mode</string>
     <string name="enable_hardcore_mode_title">Enable Hardcore Mode?</string>
     <string name="enable_hardcore_mode_message">When enabled, the app drawer will be blocked until all of today\'s tasks are completed.</string>
@@ -162,4 +164,19 @@
     <string name="todo_today_channel_name">Todo Today</string>
     <string name="todo_today_channel_desc">Shows your current and next tasks on the lockscreen</string>
     <string name="notification_permission_required">Notification permission is required for this feature</string>
+
+    <string name="chat_hint">Capture a thought…</string>
+    <string name="no_thoughts">No thoughts captured today</string>
+    <string name="send">Send</string>
+    <string name="chat">Chat</string>
+    <string name="chat_storage_folder">Chat storage folder</string>
+    <string name="clear_chat">Clear chat</string>
+    <string name="camera">Camera</string>
+    <string name="chat_media">Chat media</string>
+    <string name="play_video">Play video</string>
+    <string name="capture">Capture</string>
+    <string name="record_video">Record Video</string>
+    <string name="flip_camera">Flip Camera</string>
+    <string name="photo">PHOTO</string>
+    <string name="video">VIDEO</string>
 </resources>

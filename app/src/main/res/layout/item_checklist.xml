@@ -28,6 +28,43 @@
             android:layout_marginStart="8dp" />
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/llTray"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/llContent"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
+
+        <ImageView
+            android:id="@+id/btnEdit"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/ic_rename"
+            app:tint="?attr/primaryColor" />
+
+        <ImageView
+            android:id="@+id/btnCopy"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/ic_copy"
+            app:tint="?attr/primaryColor" />
+
+        <ImageView
+            android:id="@+id/btnDelete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/ic_delete"
+            app:tint="#FF4444" />
+
+    </LinearLayout>
+
     <View
         android:id="@+id/strikeThroughLine"
         android:layout_width="match_parent"
