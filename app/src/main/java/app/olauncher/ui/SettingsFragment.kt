@@ -482,7 +482,9 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     override fun onDestroy() {
-        viewModel.checkForMessages.call()
+        if (::viewModel.isInitialized) {
+            viewModel.checkForMessages.call()
+        }
         super.onDestroy()
     }
 }

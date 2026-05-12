@@ -100,6 +100,16 @@ class MediaPreviewDialogFragment : DialogFragment() {
         binding.root.setOnClickListener {
             dismiss()
         }
+
+        setupAlignment()
+    }
+
+    private fun setupAlignment() {
+        val prefs = app.olauncher.data.Prefs(requireContext())
+        val params = binding.btnClose.layoutParams as android.widget.FrameLayout.LayoutParams
+        params.gravity = android.view.Gravity.TOP or 
+                (if (prefs.homeAlignment == android.view.Gravity.END) android.view.Gravity.END else android.view.Gravity.START)
+        binding.btnClose.layoutParams = params
     }
 
     override fun onStart() {
@@ -191,6 +201,11 @@ class MediaPreviewDialogFragment : DialogFragment() {
                     binding.ivPreview.translationY = posY
                     binding.vvPreview.translationX = posX
                     binding.vvPreview.translationY = posY
+                    return true
+                }
+
+                override fun onScaleBegin(detector: android.view.ScaleGestureDetector): Boolean {
+                    binding.root.parent?.requestDisallowInterceptTouchEvent(true)
                     return true
                 }
             }
@@ -292,7 +307,7 @@ class MediaPreviewDialogFragment : DialogFragment() {
                         }
                     }
 
-                    if (scaleFactor > 1.0f) {
+                    if (scaleFactor > 1.0f || scaleDetector.isInProgress || event.pointerCount > 1) {
                         binding.root.parent?.requestDisallowInterceptTouchEvent(true)
                     } else {
                         binding.root.parent?.requestDisallowInterceptTouchEvent(false)

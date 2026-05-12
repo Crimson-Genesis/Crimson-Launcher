@@ -210,6 +210,7 @@ class ChatFragment : Fragment() {
             binding.btnSendChat.visibility = View.GONE
             binding.etChatInput.visibility = View.GONE
             binding.llRecordingUi.visibility = View.VISIBLE
+            binding.vAudioVisualizer.clear()
             
             recordingHandler.post(updateRecordingTask)
         } catch (e: Exception) {
@@ -489,8 +490,8 @@ class ChatFragment : Fragment() {
         chatAdapter.updateItems(newItems)
         
         if (newItems.isNotEmpty() && editingMessage == null) {
-            binding.rvChat.post {
-                binding.rvChat.scrollToPosition(newItems.size - 1)
+            _binding?.rvChat?.post {
+                _binding?.rvChat?.scrollToPosition(newItems.size - 1)
             }
         }
     }

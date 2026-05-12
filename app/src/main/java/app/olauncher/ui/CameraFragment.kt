@@ -253,8 +253,9 @@ class CameraFragment : Fragment() {
     }
 
     private fun addCapturedMedia(uri: String, type: String) {
+        val safeContext = context ?: return
         val timestamp = System.currentTimeMillis()
-        val previewUri = ChatStorage.createPreview(requireContext(), prefs, Uri.parse(uri), type, timestamp, isTemp = true)
+        val previewUri = ChatStorage.createPreview(safeContext, prefs, Uri.parse(uri), type, timestamp, isTemp = true)
         
         capturedUris.add(uri)
         capturedPreviews.add(previewUri?.toString() ?: "")
@@ -381,13 +382,14 @@ class CameraFragment : Fragment() {
 
     private fun takePhoto() {
         val imageCapture = imageCapture ?: return
-        val prefs = Prefs(requireContext())
-        val destination = ChatStorage.getNextMediaDestination(requireContext(), prefs, "TEMP_IMAGE", ".jpg")
+        val safeContext = context ?: return
+        val prefs = Prefs(safeContext)
+        val destination = ChatStorage.getNextMediaDestination(safeContext, prefs, "TEMP_IMAGE", ".jpg")
 
         val outputOptionsBuilder = when (destination) {
             is ChatStorage.MediaDestination.Internal -> ImageCapture.OutputFileOptions.Builder(destination.file)
             is ChatStorage.MediaDestination.Saf -> {
-                val os = requireContext().contentResolver.openOutputStream(destination.uri)!!
+                val os = safeContext.contentResolver.openOutputStream(destination.uri)!!
                 ImageCapture.OutputFileOptions.Builder(os)
             }
         }
@@ -395,18 +397,19 @@ class CameraFragment : Fragment() {
 
         imageCapture.takePicture(
             outputOptions,
-            ContextCompat.getMainExecutor(requireContext()),
+            ContextCompat.getMainExecutor(context ?: return),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onError(exc: ImageCaptureException) {
                     Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    val safeContext = context ?: return
                     val savedUri = when (destination) {
                         is ChatStorage.MediaDestination.Internal -> {
                             FileProvider.getUriForFile(
-                                requireContext(),
-                                "${requireContext().packageName}.fileprovider",
+                                safeContext,
+                                "${safeContext.packageName}.fileprovider",
                                 destination.file
                             )
                         }
@@ -429,32 +432,33 @@ class CameraFragment : Fragment() {
             return
         }
 
-        val prefs = Prefs(requireContext())
-        val destination = ChatStorage.getNextMediaDestination(requireContext(), prefs, "TEMP_VIDEO", ".mp4")
+        val safeContext = context ?: return
+        val prefs = Prefs(safeContext)
+        val destination = ChatStorage.getNextMediaDestination(safeContext, prefs, "TEMP_VIDEO", ".mp4")
 
         val outputOptions = when (destination) {
             is ChatStorage.MediaDestination.Internal -> FileOutputOptions.Builder(destination.file).build()
             is ChatStorage.MediaDestination.Saf -> {
-                val pfd = requireContext().contentResolver.openFileDescriptor(destination.uri, "rw")!!
+                val pfd = safeContext.contentResolver.openFileDescriptor(destination.uri, "rw")!!
                 FileDescriptorOutputOptions.Builder(pfd).build()
             }
         }
 
         val pendingRecording = when (outputOptions) {
-            is FileOutputOptions -> videoCapture.output.prepareRecording(requireContext(), outputOptions)
-            is FileDescriptorOutputOptions -> videoCapture.output.prepareRecording(requireContext(), outputOptions)
+            is FileOutputOptions -> videoCapture.output.prepareRecording(safeContext, outputOptions)
+            is FileDescriptorOutputOptions -> videoCapture.output.prepareRecording(safeContext, outputOptions)
             else -> throw RuntimeException("Unsupported output options")
         }
 
         recording = pendingRecording
-            .apply { if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) withAudioEnabled() }
-            .start(ContextCompat.getMainExecutor(requireContext())) { recordEvent ->
+            .apply { if (ActivityCompat.checkSelfPermission(safeContext, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) withAudioEnabled() }
+            .start(ContextCompat.getMainExecutor(safeContext)) { recordEvent ->
                 _binding?.let { binding ->
                     when (recordEvent) {
                         is VideoRecordEvent.Start -> {
                             binding.flCapture.isEnabled = true
                             binding.btnMainCapture.setBackgroundResource(R.drawable.circle_red)
-                            binding.ivCaptureIcon.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.white))
+                            binding.ivCaptureIcon.setColorFilter(ContextCompat.getColor(safeContext, android.R.color.white))
                             binding.tvRecordingTimer.visibility = View.VISIBLE
                             binding.tvRecordingTimer.text = "00:00:000"
                         }
@@ -514,7 +518,8 @@ class CameraFragment : Fragment() {
     }
 
     private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
+        val safeContext = context ?: return
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(safeContext)
 
         cameraProviderFuture.addListener({
             val safeBinding = _binding ?: return@addListener
@@ -544,15 +549,14 @@ class CameraFragment : Fragment() {
             videoCapture = VideoCapture.withOutput(recorder)
 
             try {
-                cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
-                    viewLifecycleOwner, cameraSelector, preview, imageCapture, videoCapture
+                    this, cameraSelector, preview, imageCapture, videoCapture
                 )
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
 
-        }, ContextCompat.getMainExecutor(requireContext()))
+        }, ContextCompat.getMainExecutor(safeContext))
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {

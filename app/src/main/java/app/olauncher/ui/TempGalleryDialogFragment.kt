@@ -53,6 +53,18 @@ class TempGalleryDialogFragment : DialogFragment() {
         return binding.root
     }
 
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.let { window ->
+            val displayMetrics = resources.displayMetrics
+            val width = (displayMetrics.widthPixels * 0.9).toInt()
+            val height = (displayMetrics.heightPixels * 0.6).toInt()
+            window.setLayout(width, height)
+            window.setGravity(Gravity.CENTER)
+            window.setBackgroundDrawableResource(android.R.color.transparent)
+        }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -89,16 +101,25 @@ class TempGalleryDialogFragment : DialogFragment() {
 
     private fun setupConfirmButton() {
         val prefs = Prefs(requireContext())
-        val params = binding.btnConfirmSelection.layoutParams as RelativeLayout.LayoutParams
-        params.removeRule(RelativeLayout.ALIGN_PARENT_START)
-        params.removeRule(RelativeLayout.ALIGN_PARENT_END)
+        val confirmParams = binding.btnConfirmSelection.layoutParams as RelativeLayout.LayoutParams
+        val closeParams = binding.btnClose.layoutParams as RelativeLayout.LayoutParams
         
+        confirmParams.removeRule(RelativeLayout.ALIGN_PARENT_START)
+        confirmParams.removeRule(RelativeLayout.ALIGN_PARENT_END)
+        
+        closeParams.removeRule(RelativeLayout.ALIGN_PARENT_START)
+        closeParams.removeRule(RelativeLayout.ALIGN_PARENT_END)
+
         if (prefs.homeAlignment == Gravity.END) {
-            params.addRule(RelativeLayout.ALIGN_PARENT_END)
+            confirmParams.addRule(RelativeLayout.ALIGN_PARENT_END)
+            closeParams.addRule(RelativeLayout.ALIGN_PARENT_END)
         } else {
-            params.addRule(RelativeLayout.ALIGN_PARENT_START)
+            confirmParams.addRule(RelativeLayout.ALIGN_PARENT_START)
+            closeParams.addRule(RelativeLayout.ALIGN_PARENT_START)
         }
-        binding.btnConfirmSelection.layoutParams = params
+        
+        binding.btnConfirmSelection.layoutParams = confirmParams
+        binding.btnClose.layoutParams = closeParams
     }
 
     private fun toggleSelection(uri: String, position: Int) {

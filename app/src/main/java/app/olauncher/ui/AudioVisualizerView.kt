@@ -52,6 +52,13 @@ class AudioVisualizerView @JvmOverloads constructor(
         invalidate()
     }
 
+    fun clear() {
+        amplitudes.clear()
+        staticAmplitudes = null
+        playbackProgress = 0f
+        invalidate()
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         
