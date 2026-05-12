@@ -393,7 +393,7 @@ Tapping an image or video thumbnail opens a full-screen immersive viewer:
 
 ### Installation Steps
 
-1. Download the latest APK from the [Releases](https://github.com/crimson-genesis/Olauncher/releases) page
+1. Download the latest APK from the [Releases](https://github.com/crimson-genesis/Crimson-Launcher/releases) page
 2. Transfer the APK to your device
 3. **For Google/Pixel phones**: 
    - Go to Settings → Security → Disable "Verify apps over USB" or enable "Install unknown apps"
@@ -467,4 +467,4 @@ Everything after v1.2 has been built and maintained solely by [crimson-genesis](
 
 ## Support
 
-For issues, feature requests, or contributions, please visit the [GitHub Repository](https://github.com/crimson-genesis/Olauncher).
+For issues, feature requests, or contributions, please visit the [GitHub Repository](https://github.com/crimson-genesis/Crimson-Launcher).
