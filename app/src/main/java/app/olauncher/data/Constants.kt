@@ -22,13 +22,14 @@ object Constants {
         const val OFF = 0
         const val ON = 1
         const val DATE_ONLY = 2
+        const val ON_WITH_SEC = 3
 
         fun isTimeVisible(dateTimeVisibility: Int): Boolean {
-            return dateTimeVisibility == ON
+            return dateTimeVisibility == ON || dateTimeVisibility == ON_WITH_SEC
         }
 
         fun isDateVisible(dateTimeVisibility: Int): Boolean {
-            return dateTimeVisibility == ON || dateTimeVisibility == DATE_ONLY
+            return dateTimeVisibility == ON || dateTimeVisibility == DATE_ONLY || dateTimeVisibility == ON_WITH_SEC
         }
     }
 

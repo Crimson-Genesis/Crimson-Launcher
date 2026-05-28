@@ -126,6 +126,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             R.id.dateTimeOn -> toggleDateTime(Constants.DateTime.ON)
             R.id.dateTimeOff -> toggleDateTime(Constants.DateTime.OFF)
             R.id.dateOnly -> toggleDateTime(Constants.DateTime.DATE_ONLY)
+            R.id.dateTimeOnWithSec -> toggleDateTime(Constants.DateTime.ON_WITH_SEC)
 
             R.id.textSizeValue -> {
                 if (binding.textSizesLayout.isVisible) {
@@ -191,6 +192,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         binding.dateTimeOn.setOnClickListener(this)
         binding.dateTimeOff.setOnClickListener(this)
         binding.dateOnly.setOnClickListener(this)
+        binding.dateTimeOnWithSec.setOnClickListener(this)
         binding.swipeDownAction.setOnClickListener(this)
         binding.search.setOnClickListener(this)
         binding.notifications.setOnClickListener(this)
@@ -254,6 +256,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             when (prefs.dateTimeVisibility) {
                 Constants.DateTime.DATE_ONLY -> R.string.date
                 Constants.DateTime.ON -> R.string.on
+                Constants.DateTime.ON_WITH_SEC -> R.string.plus_sec
                 else -> R.string.off
             }
         )

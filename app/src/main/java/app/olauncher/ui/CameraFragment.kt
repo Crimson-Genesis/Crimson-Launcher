@@ -10,6 +10,11 @@ import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.view.GestureDetector
+import android.view.ScaleGestureDetector
+import android.view.MotionEvent
+import androidx.camera.core.Camera
+import androidx.camera.core.FocusMeteringAction
 import android.view.OrientationEventListener
 import android.view.Surface
 import android.view.ViewGroup
@@ -51,6 +56,7 @@ class CameraFragment : Fragment() {
 
     private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
     private var currentMode = CameraMode.PHOTO
+    private var camera: Camera? = null
 
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var viewModel: MainViewModel
@@ -72,6 +78,26 @@ class CameraFragment : Fragment() {
         }
     }
 
+    private val requestPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        var allGranted = true
+        permissions.entries.forEach {
+            if (it.key in REQUIRED_PERMISSIONS && !it.value) {
+                allGranted = false
+            }
+        }
+        if (allGranted) {
+            startCamera()
+        } else {
+            try {
+                findNavController().popBackStack()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to navigate back on permission denied", e)
+            }
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -89,10 +115,10 @@ class CameraFragment : Fragment() {
         if (allPermissionsGranted()) {
             startCamera()
         } else {
-            ActivityCompat.requestPermissions(
-                requireActivity(), REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-            )
+            requestPermissionsLauncher.launch(REQUIRED_PERMISSIONS)
         }
+
+        setupCameraGestures()
 
         binding.flCapture.setOnClickListener {
             if (currentMode == CameraMode.PHOTO) {
@@ -361,6 +387,7 @@ class CameraFragment : Fragment() {
         if (currentMode == mode || recording != null) return
         currentMode = mode
         updateUIForMode()
+        startCamera()
     }
 
     private fun updateUIForMode() {
@@ -404,12 +431,12 @@ class CameraFragment : Fragment() {
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    val safeContext = context ?: return
+                    val savedContext = context ?: return
                     val savedUri = when (destination) {
                         is ChatStorage.MediaDestination.Internal -> {
                             FileProvider.getUriForFile(
-                                safeContext,
-                                "${safeContext.packageName}.fileprovider",
+                                savedContext,
+                                "${savedContext.packageName}.fileprovider",
                                 destination.file
                             )
                         }
@@ -461,6 +488,9 @@ class CameraFragment : Fragment() {
                             binding.ivCaptureIcon.setColorFilter(ContextCompat.getColor(safeContext, android.R.color.white))
                             binding.tvRecordingTimer.visibility = View.VISIBLE
                             binding.tvRecordingTimer.text = "00:00:000"
+                            binding.btnFlipCamera.visibility = View.INVISIBLE
+                            binding.btnClose.visibility = View.INVISIBLE
+                            binding.modeSelector.visibility = View.INVISIBLE
                         }
                         is VideoRecordEvent.Status -> {
                             val durationNanos = recordEvent.recordingStats.recordedDurationNanos
@@ -480,16 +510,19 @@ class CameraFragment : Fragment() {
                             binding.btnMainCapture.setBackgroundResource(R.drawable.circle_white)
                             binding.ivCaptureIcon.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.black))
                             binding.tvRecordingTimer.visibility = View.GONE
+                            binding.btnFlipCamera.visibility = View.VISIBLE
+                            binding.btnClose.visibility = View.VISIBLE
+                            binding.modeSelector.visibility = View.VISIBLE
 
                             if (!recordEvent.hasError()) {
                                 // Add small delay to ensure file is closed and ready for playback/preview
                                 _binding?.root?.postDelayed({
-                                    val safeContext = context ?: return@postDelayed
+                                    val delayedContext = context ?: return@postDelayed
                                     val savedUri = when (destination) {
                                         is ChatStorage.MediaDestination.Internal -> {
                                             FileProvider.getUriForFile(
-                                                safeContext,
-                                                "${safeContext.packageName}.fileprovider",
+                                                delayedContext,
+                                                "${delayedContext.packageName}.fileprovider",
                                                 destination.file
                                             )
                                         }
@@ -509,6 +542,7 @@ class CameraFragment : Fragment() {
     }
 
     private fun flipCamera() {
+        if (recording != null) return
         cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) {
             CameraSelector.DEFAULT_FRONT_CAMERA
         } else {
@@ -538,25 +572,178 @@ class CameraFragment : Fragment() {
                     it.surfaceProvider = safeBinding.viewFinder.surfaceProvider
                 }
 
-            imageCapture = ImageCapture.Builder()
-                .setTargetRotation(rotation)
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                .build()
-
-            val recorder = Recorder.Builder()
-                .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
-                .build()
-            videoCapture = VideoCapture.withOutput(recorder)
-
             try {
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture, videoCapture
-                )
+                cameraProvider.unbindAll()
+                camera = if (currentMode == CameraMode.PHOTO) {
+                    videoCapture = null
+                    imageCapture = ImageCapture.Builder()
+                        .setTargetRotation(rotation)
+                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                        .build()
+                    cameraProvider.bindToLifecycle(
+                        this, cameraSelector, preview, imageCapture
+                    )
+                } else {
+                    imageCapture = null
+                    val recorder = Recorder.Builder()
+                        .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
+                        .build()
+                    videoCapture = VideoCapture.withOutput(recorder)
+                    cameraProvider.bindToLifecycle(
+                        this, cameraSelector, preview, videoCapture
+                    )
+                }
+                setupExposureSlider()
+                setupZoomSlider()
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
 
         }, ContextCompat.getMainExecutor(safeContext))
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupCameraGestures() {
+        val context = context ?: return
+
+        val scaleGestureDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                val activeCamera = camera ?: return false
+                val zoomState = activeCamera.cameraInfo.zoomState.value ?: return false
+                val currentZoomRatio = zoomState.zoomRatio
+                val delta = detector.scaleFactor
+                activeCamera.cameraControl.setZoomRatio(currentZoomRatio * delta)
+                return true
+            }
+        })
+
+        val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapUp(e: MotionEvent): Boolean {
+                performTapToFocus(e.x, e.y)
+                return true
+            }
+
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                toggleZoomRatio()
+                return true
+            }
+        })
+
+        binding.viewFinder.setOnTouchListener { _, event ->
+            scaleGestureDetector.onTouchEvent(event)
+            if (!scaleGestureDetector.isInProgress) {
+                gestureDetector.onTouchEvent(event)
+            }
+            true
+        }
+    }
+
+    private fun toggleZoomRatio() {
+        val activeCamera = camera ?: return
+        val zoomState = activeCamera.cameraInfo.zoomState.value ?: return
+        val minZoom = zoomState.minZoomRatio
+        val maxZoom = zoomState.maxZoomRatio
+        val currentZoom = zoomState.zoomRatio
+
+        val targetZoom = if (currentZoom < minZoom * 1.5f) {
+            (minZoom * 2f).coerceAtMost(maxZoom)
+        } else {
+            minZoom
+        }
+        activeCamera.cameraControl.setZoomRatio(targetZoom)
+    }
+
+    private fun performTapToFocus(x: Float, y: Float) {
+        val activeCamera = camera ?: return
+        val factory = binding.viewFinder.meteringPointFactory
+        val point = factory.createPoint(x, y)
+        val action = FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
+            .setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+
+        activeCamera.cameraControl.startFocusAndMetering(action)
+
+        val ring = binding.viewFocusRing
+        ring.translationX = x - (ring.width / 2)
+        ring.translationY = y - (ring.height / 2)
+        ring.visibility = View.VISIBLE
+        ring.alpha = 1.0f
+        ring.scaleX = 1.3f
+        ring.scaleY = 1.3f
+
+        ring.animate()
+            .scaleX(1.0f)
+            .scaleY(1.0f)
+            .setDuration(300)
+            .withEndAction {
+                ring.animate()
+                    .alpha(0.0f)
+                    .setStartDelay(1000)
+                    .setDuration(300)
+                    .withEndAction {
+                        ring.visibility = View.GONE
+                    }
+                    .start()
+            }
+            .start()
+    }
+
+    private fun setupExposureSlider() {
+        val activeCamera = camera ?: return
+        val exposureState = activeCamera.cameraInfo.exposureState
+        if (exposureState.isExposureCompensationSupported) {
+            val range = exposureState.exposureCompensationRange
+            binding.sbExposure.max = range.upper - range.lower
+            val currentExposure = exposureState.exposureCompensationIndex
+            binding.sbExposure.progress = currentExposure - range.lower
+            binding.llExposureContainer.visibility = View.VISIBLE
+
+            binding.sbExposure.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                    if (fromUser) {
+                        val newExposureIndex = progress + range.lower
+                        activeCamera.cameraControl.setExposureCompensationIndex(newExposureIndex)
+                    }
+                }
+                override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            })
+        } else {
+            binding.llExposureContainer.visibility = View.GONE
+        }
+    }
+
+    private fun setupZoomSlider() {
+        val activeCamera = camera ?: return
+
+        activeCamera.cameraInfo.zoomState.observe(viewLifecycleOwner) { zoomState ->
+            val minZoom = zoomState.minZoomRatio
+            val maxZoom = zoomState.maxZoomRatio
+            val currentZoom = zoomState.zoomRatio
+
+            val formattedCurrent = String.format(Locale.US, "%.1fx", currentZoom)
+            binding.tvZoomIndicator.text = formattedCurrent
+
+            binding.tvZoomMin.text = String.format(Locale.US, "%.1fx", minZoom)
+            binding.tvZoomMax.text = String.format(Locale.US, "%.1fx", maxZoom)
+
+            val progress = (zoomState.linearZoom * 100).toInt()
+            binding.sbZoom.progress = progress
+
+            binding.tvZoomIndicator.visibility = View.VISIBLE
+            binding.llZoomContainer.visibility = View.VISIBLE
+        }
+
+        binding.sbZoom.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    val linearZoom = progress / 100f
+                    activeCamera.cameraControl.setLinearZoom(linearZoom)
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+        })
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {

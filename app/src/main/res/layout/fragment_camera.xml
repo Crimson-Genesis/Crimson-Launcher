@@ -32,6 +32,101 @@
             android:visibility="gone"
             tools:visibility="visible" />
 
+        <!-- Zoom Text Indicator -->
+        <TextView
+            android:id="@+id/tvZoomIndicator"
+            style="@style/TextSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="4dp"
+            android:background="@drawable/rounded_rect_shade_color"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:text="1.0x"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <!-- Zoom Slider -->
+        <LinearLayout
+            android:id="@+id/llZoomContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp"
+            android:paddingHorizontal="32dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/tvZoomMin"
+                style="@style/TextSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1.0x"
+                android:textColor="@android:color/white" />
+
+            <SeekBar
+                android:id="@+id/sbZoom"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="0"
+                android:thumbTint="@android:color/white"
+                android:trackTint="#66FFFFFF"
+                android:progressTint="@android:color/white" />
+
+            <TextView
+                android:id="@+id/tvZoomMax"
+                style="@style/TextSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="8.0x"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <!-- Exposure / Contrast Slider -->
+        <LinearLayout
+            android:id="@+id/llExposureContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp"
+            android:paddingHorizontal="32dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_contrast_low"
+                app:tint="@android:color/white"
+                android:contentDescription="Low Contrast" />
+
+            <SeekBar
+                android:id="@+id/sbExposure"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="20"
+                android:progress="10"
+                android:thumbTint="@android:color/white"
+                android:trackTint="#66FFFFFF"
+                android:progressTint="@android:color/white" />
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_contrast_high"
+                app:tint="@android:color/white"
+                android:contentDescription="High Contrast" />
+        </LinearLayout>
+
         <RelativeLayout
             android:id="@+id/rlModeContainer"
             android:layout_width="match_parent"
@@ -180,6 +275,14 @@
         android:layout_height="64dp"
         android:layout_gravity="center"
         android:elevation="20dp"
+        android:visibility="gone" />
+
+    <!-- Circular tap to focus indicator -->
+    <View
+        android:id="@+id/viewFocusRing"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:background="@drawable/focus_ring"
         android:visibility="gone" />
 
 </FrameLayout>

@@ -165,6 +165,16 @@
                             android:paddingVertical="6dp"
                             android:text="@string/date_only" />
 
+                        <TextView
+                            android:id="@+id/dateTimeOnWithSec"
+                            style="@style/TextSmallBold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="24dp"
+                            android:gravity="center"
+                            android:paddingVertical="6dp"
+                            android:text="@string/plus_sec" />
+
                     </LinearLayout>
 
                 </FrameLayout>

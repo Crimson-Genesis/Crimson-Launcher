@@ -197,6 +197,14 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         binding.clock.isVisible = Constants.DateTime.isTimeVisible(prefs.dateTimeVisibility)
         binding.date.isVisible = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
 
+        if (prefs.dateTimeVisibility == Constants.DateTime.ON_WITH_SEC) {
+            binding.clock.format12Hour = "h:mm:ss a"
+            binding.clock.format24Hour = "HH:mm:ss"
+        } else {
+            binding.clock.format12Hour = "h:mm a"
+            binding.clock.format24Hour = "HH:mm"
+        }
+
         val dateFormat = SimpleDateFormat("EEE, d MMM", Locale.getDefault())
         var dateText = dateFormat.format(Date())
 
