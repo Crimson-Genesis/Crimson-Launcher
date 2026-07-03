@@ -59,6 +59,14 @@ class MainActivity : AppCompatActivity() {
     private var isPickerActive = false
     private var onCreateTimestamp: Long = 0
 
+    // Registered by fragments that need to observe ALL touch events (e.g. swipe nav over RecyclerViews)
+    var touchEventForwarder: ((android.view.MotionEvent) -> Unit)? = null
+
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        touchEventForwarder?.invoke(ev)
+        return super.dispatchTouchEvent(ev)
+    }
+
     private val backupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         isPickerActive = false
         uri ?: return@registerForActivityResult

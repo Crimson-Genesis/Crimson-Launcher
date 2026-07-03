@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
 import java.util.Calendar
 import java.util.Locale
+import org.json.JSONArray
+import org.json.JSONObject
 
 class Prefs(context: Context) {
     private val PREFS_FILENAME = "app.olauncher"
@@ -49,6 +51,11 @@ class Prefs(context: Context) {
     private val CALENDAR_APP_PACKAGE = "CALENDAR_APP_PACKAGE"
     private val CALENDAR_APP_USER = "CALENDAR_APP_USER"
     private val CALENDAR_APP_CLASS_NAME = "CALENDAR_APP_CLASS_NAME"
+    private val SWIPE_DOWN_APP_PACKAGE = "SWIPE_DOWN_APP_PACKAGE"
+    private val SWIPE_DOWN_APP_USER = "SWIPE_DOWN_APP_USER"
+    private val SWIPE_DOWN_APP_LIST = "SWIPE_DOWN_APP_LIST"
+    private val SWIPE_DOWN_APP_CLASS_NAME = "SWIPE_DOWN_APP_CLASS_NAME"
+    private val SWIPE_DOWN_APP_LABEL = "SWIPE_DOWN_APP_LABEL"
 
     private val SHORTCUT_ID_SWIPE_LEFT = "SHORTCUT_ID_SWIPE_LEFT"
     private val IS_SHORTCUT_SWIPE_LEFT = "IS_SHORTCUT_SWIPE_LEFT"
@@ -222,6 +229,22 @@ class Prefs(context: Context) {
         get() = prefs.getString(CALENDAR_APP_CLASS_NAME, "").toString()
         set(value) = prefs.edit { putString(CALENDAR_APP_CLASS_NAME, value).apply() }
 
+    var swipeDownAppPackage: String
+        get() = prefs.getString(SWIPE_DOWN_APP_PACKAGE, "").toString()
+        set(value) = prefs.edit { putString(SWIPE_DOWN_APP_PACKAGE, value).apply() }
+
+    var swipeDownAppUser: String
+        get() = prefs.getString(SWIPE_DOWN_APP_USER, "").toString()
+        set(value) = prefs.edit { putString(SWIPE_DOWN_APP_USER, value).apply() }
+
+    var swipeDownAppClassName: String?
+        get() = prefs.getString(SWIPE_DOWN_APP_CLASS_NAME, "").toString()
+        set(value) = prefs.edit { putString(SWIPE_DOWN_APP_CLASS_NAME, value).apply() }
+
+    var swipeDownAppLabel: String
+        get() = prefs.getString(SWIPE_DOWN_APP_LABEL, "").toString()
+        set(value) = prefs.edit { putString(SWIPE_DOWN_APP_LABEL, value).apply() }
+
     // Swipe left/right shortcut support
     var shortcutIdSwipeLeft: String
         get() = prefs.getString(SHORTCUT_ID_SWIPE_LEFT, "").toString()
@@ -314,4 +337,93 @@ class Prefs(context: Context) {
     fun clearAll() {
         prefs.edit().clear().apply()
     }
+
+    var swipeDownAppListJson: String
+        get() = prefs.getString(SWIPE_DOWN_APP_LIST, "[]").toString()
+        set(value) = prefs.edit { putString(SWIPE_DOWN_APP_LIST, value).apply() }
+    fun getSwipeDownAppList(): List<LauncherApp> {
+        val jsonStr = swipeDownAppListJson
+        if (jsonStr.isEmpty() || jsonStr == "[]") {
+            val oldPkg = swipeDownAppPackage
+            if (oldPkg.isNotEmpty()) {
+                return listOf(LauncherApp(oldPkg, swipeDownAppLabel, swipeDownAppUser))
+            }
+            return emptyList()
+        }
+        val list = mutableListOf<LauncherApp>()
+        try {
+            val array = JSONArray(jsonStr)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(parseLauncherApp(obj))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return list
+    }
+
+    private fun parseLauncherApp(obj: JSONObject): LauncherApp {
+        val pkg = obj.getString("package")
+        val label = obj.getString("label")
+        val user = obj.getString("user")
+        val customLabel = if (obj.has("customLabel")) obj.getString("customLabel") else null
+        
+        val backgroundAppsList = mutableListOf<LauncherApp>()
+        if (obj.has("backgroundApps")) {
+            val bgArray = obj.getJSONArray("backgroundApps")
+            for (j in 0 until bgArray.length()) {
+                val bgObj = bgArray.getJSONObject(j)
+                backgroundAppsList.add(parseLauncherApp(bgObj))
+            }
+        }
+        return LauncherApp(pkg, label, user, customLabel, backgroundAppsList)
+    }
+
+    fun setSwipeDownAppList(list: List<LauncherApp>) {
+        val array = JSONArray()
+        for (app in list) {
+            array.put(serializeLauncherApp(app))
+        }
+        swipeDownAppListJson = array.toString()
+        
+        if (list.isNotEmpty()) {
+            swipeDownAppPackage = list[0].packageName
+            swipeDownAppLabel = list[0].label
+            swipeDownAppUser = list[0].userHandle
+        } else {
+            swipeDownAppPackage = ""
+            swipeDownAppLabel = ""
+            swipeDownAppUser = ""
+        }
+    }
+
+    private fun serializeLauncherApp(app: LauncherApp): JSONObject {
+        val obj = JSONObject()
+        obj.put("package", app.packageName)
+        obj.put("label", app.label)
+        obj.put("user", app.userHandle)
+        if (app.customLabel != null) {
+            obj.put("customLabel", app.customLabel)
+        }
+        if (app.backgroundApps.isNotEmpty()) {
+            val bgArray = JSONArray()
+            for (bgApp in app.backgroundApps) {
+                bgArray.put(serializeLauncherApp(bgApp))
+            }
+            obj.put("backgroundApps", bgArray)
+        }
+        return obj
+    }
+}
+
+data class LauncherApp(
+    val packageName: String,
+    val label: String,
+    val userHandle: String,
+    val customLabel: String? = null,
+    val backgroundApps: List<LauncherApp> = emptyList()
+) {
+    val displayName: String
+        get() = if (!customLabel.isNullOrEmpty()) customLabel else label
 }

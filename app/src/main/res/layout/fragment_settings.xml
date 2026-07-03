@@ -511,7 +511,7 @@
                             style="@style/TextSmallBold"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginEnd="24dp"
+                            android:layout_marginEnd="16dp"
                             android:gravity="center"
                             android:paddingVertical="6dp"
                             android:text="@string/notifications" />
@@ -521,13 +521,61 @@
                             style="@style/TextSmallBold"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="16dp"
                             android:gravity="center"
                             android:paddingVertical="6dp"
                             android:text="@string/search" />
 
+                        <TextView
+                            android:id="@+id/appLauncher"
+                            style="@style/TextSmallBold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:paddingVertical="6dp"
+                            android:text="@string/app_launcher" />
+
                     </LinearLayout>
 
                 </FrameLayout>
+
+                <!-- Swipe down app select option -->
+                <LinearLayout
+                    android:id="@+id/flSwipeDownAppSelect"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        style="@style/TextSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="Configured apps (tap to edit / delete):"
+                        android:textColor="?attr/primaryColor" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/swipeDownAppList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:nestedScrollingEnabled="false" />
+
+                    <TextView
+                        android:id="@+id/btnSwipeDownAddApp"
+                        style="@style/TextSmallBold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:layout_marginEnd="4dp"
+                        android:layout_marginTop="8dp"
+                        android:padding="8dp"
+                        android:text="+ Add App"
+                        android:textColor="?attr/primaryColor" />
+
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout

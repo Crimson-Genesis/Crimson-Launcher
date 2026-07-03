@@ -105,4 +105,103 @@
         android:maxLines="1"
         android:text="@string/set_as_default_launcher_u"
         android:visibility="gone" />
+
+    <!-- Gesture Overlay for App Launcher -->
+    <FrameLayout
+        android:id="@+id/gestureLauncherOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#E6050505"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Close option -->
+            <TextView
+                android:id="@+id/overlayClose"
+                style="@style/TextLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Close"
+                android:textColor="#FFFFFF"
+                android:textSize="24sp"
+                android:padding="16dp"
+                android:layout_marginBottom="32dp" />
+
+            <!-- App Name Display (Stack/Carousel) -->
+            <LinearLayout
+                android:id="@+id/overlayAppContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="12dp">
+
+                <!-- Left (Previous) App -->
+                <TextView
+                    android:id="@+id/overlayAppLeft"
+                    style="@style/TextLarge"
+                    android:textSize="20sp"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="#FFFFFF"
+                    android:alpha="0.4"
+                    android:gravity="center"
+                    android:singleLine="true"
+                    tools:text="Gmail" />
+
+                <!-- Center (Selected) App -->
+                <TextView
+                    android:id="@+id/overlayAppName"
+                    style="@style/TextLarge"
+                    android:textSize="32sp"
+                    android:textStyle="bold"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:singleLine="true"
+                    tools:text="WhatsApp" />
+
+                <!-- Right (Next) App -->
+                <TextView
+                    android:id="@+id/overlayAppRight"
+                    style="@style/TextLarge"
+                    android:textSize="20sp"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="#FFFFFF"
+                    android:alpha="0.4"
+                    android:gravity="center"
+                    android:singleLine="true"
+                    tools:text="Slack" />
+
+            </LinearLayout>
+
+            <!-- Launch option -->
+            <TextView
+                android:id="@+id/overlayLaunch"
+                style="@style/TextLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Launch"
+                android:textColor="#FFFFFF"
+                android:textSize="24sp"
+                android:padding="16dp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
 </FrameLayout>

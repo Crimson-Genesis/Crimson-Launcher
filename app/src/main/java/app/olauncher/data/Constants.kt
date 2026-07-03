@@ -36,6 +36,7 @@ object Constants {
     object SwipeDownAction {
         const val SEARCH = 1
         const val NOTIFICATIONS = 2
+        const val APP_LAUNCHER = 3
     }
 
     object CharacterIndicator {
@@ -73,6 +74,7 @@ object Constants {
     const val FLAG_SET_SWIPE_RIGHT_APP = 12
     const val FLAG_SET_CLOCK_APP = 13
     const val FLAG_SET_CALENDAR_APP = 14
+    const val FLAG_SET_SWIPE_DOWN_APP = 15
 
     const val REQUEST_CODE_ENABLE_ADMIN = 666
     const val REQUEST_CODE_LAUNCHER_SELECTOR = 678

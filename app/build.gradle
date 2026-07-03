@@ -27,6 +27,7 @@ def hasSigningConfig = signingStoreFilePath && signingStorePassword && signingKe
 android {
     namespace 'app.olauncher'
     compileSdk 35
+    buildToolsVersion "35.0.0"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -42,7 +43,7 @@ android {
         minSdkVersion 26
         targetSdkVersion 35
         versionCode 11
-        versionName "1.7.2"
+        versionName "1.7.3"
 
         resourceConfigurations += ["en", "ar", "de", "es-rES", "es-rUS", "fr", "he", "hr", "hu", "in", "it", "ja", "nl", "pl", "pt-rBR", "ru-rRU", "sv", "tr", "uk", "zh"]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

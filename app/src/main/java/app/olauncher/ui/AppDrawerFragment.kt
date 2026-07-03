@@ -89,7 +89,7 @@ class AppDrawerFragment : Fragment() {
     private fun initViews() {
         if (flag == Constants.FLAG_HIDDEN_APPS)
             binding.search.queryHint = getString(R.string.hidden_apps)
-        else if (flag == Constants.FLAG_SET_CALENDAR_APP)
+        else if (flag == Constants.FLAG_SET_CALENDAR_APP || flag == Constants.FLAG_SET_SWIPE_DOWN_APP)
             binding.search.queryHint = "Please select an app"
         setAlignment(prefs.homeAlignment)
     }

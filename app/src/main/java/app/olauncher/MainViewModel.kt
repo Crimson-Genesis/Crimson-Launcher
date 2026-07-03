@@ -21,6 +21,7 @@ import app.olauncher.data.ChatMessage
 import app.olauncher.data.ChatStorage
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
+import app.olauncher.data.LauncherApp
 import app.olauncher.data.TodoItem
 import app.olauncher.data.TodoItemRepository
 import app.olauncher.data.TodoTemplate
@@ -60,6 +61,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val launcherResetFailed = MutableLiveData<Boolean>()
     val homeAppAlignment = MutableLiveData<Int>()
     val screenTimeValue = MutableLiveData<String>()
+
+    var swipeDownAppEditingIndex: Int = -1
 
     private val database = AppDatabase.getDatabase(application)
     
@@ -451,6 +454,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             Constants.FLAG_SET_SWIPE_RIGHT_APP -> saveSwipeApp(appModel, isLeft = false)
             Constants.FLAG_SET_CLOCK_APP -> saveClockApp(appModel)
             Constants.FLAG_SET_CALENDAR_APP -> saveCalendarApp(appModel)
+            Constants.FLAG_SET_SWIPE_DOWN_APP -> saveSwipeDownApp(appModel)
         }
     }
 
@@ -528,6 +532,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             prefs.calendarAppPackage = appModel.appPackage
             prefs.calendarAppUser = appModel.user.toString()
             prefs.calendarAppClassName = appModel.activityClassName
+        }
+    }
+
+    private fun saveSwipeDownApp(appModel: AppModel) {
+        if (appModel is AppModel.App) {
+            val appList = prefs.getSwipeDownAppList().toMutableList()
+            val newApp = LauncherApp(
+                packageName = appModel.appPackage,
+                label = appModel.appLabel,
+                userHandle = appModel.user.toString()
+            )
+            if (swipeDownAppEditingIndex >= 0 && swipeDownAppEditingIndex < appList.size) {
+                appList[swipeDownAppEditingIndex] = newApp
+            } else {
+                appList.add(newApp)
+            }
+            prefs.setSwipeDownAppList(appList)
         }
     }
 

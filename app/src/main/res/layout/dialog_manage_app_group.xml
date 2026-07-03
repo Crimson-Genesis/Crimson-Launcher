@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/rounded_rect_shade_color"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:fitsSystemWindows="true">
+
+    <!-- Title and Rename Section -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp">
+
+        <!-- Display mode -->
+        <TextView
+            android:id="@+id/groupTitle"
+            style="@style/TextLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:gravity="center"
+            android:textStyle="bold"
+            android:textColor="?attr/primaryColor"
+            android:background="?android:attr/selectableItemBackground"
+            android:hint="Click to rename group" />
+
+        <!-- Edit mode -->
+        <LinearLayout
+            android:id="@+id/groupTitleEditLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone"
+            android:padding="4dp">
+
+            <EditText
+                android:id="@+id/groupTitleInput"
+                style="@style/TextLarge"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/rounded_rect_transparent"
+                android:textColor="?attr/primaryColor"
+                android:singleLine="true"
+                android:imeOptions="actionDone"
+                android:padding="8dp" />
+
+            <ImageView
+                android:id="@+id/btnSaveTitle"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_check"
+                android:padding="6dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                app:tint="?attr/primaryColor"
+                android:layout_marginStart="8dp"
+                android:contentDescription="Save Title" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <TextView
+        style="@style/TextSmall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:text="First app runs in foreground. Others run in background."
+        android:alpha="0.6"
+        android:textColor="?attr/primaryColor" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/primaryColor"
+        android:alpha="0.2"
+        android:layout_marginBottom="8dp" />
+
+    <!-- RecyclerView of Group Apps -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/groupAppList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="300dp"
+        android:nestedScrollingEnabled="true" />
+
+    <!-- Bottom Actions -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:id="@+id/btnGroupDone"
+            style="@style/TextLarge"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="16dp"
+            android:text="Done"
+            android:gravity="center"
+            android:textStyle="bold"
+            android:textColor="?attr/primaryColor"
+            android:background="?android:attr/selectableItemBackground" />
+
+        <TextView
+            android:id="@+id/btnGroupAddApp"
+            style="@style/TextLarge"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="16dp"
+            android:text="+ Add App"
+            android:gravity="center"
+            android:textStyle="bold"
+            android:textColor="?attr/primaryColor"
+            android:background="?android:attr/selectableItemBackground" />
+
+    </LinearLayout>
+
+</LinearLayout>
