@@ -55,6 +55,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
 
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
+    private var isDialogShowing = false
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -119,6 +120,17 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         )
         binding.swipeDownAppList.adapter = swipeDownAdapter
         binding.swipeDownAppList.layoutManager = LinearLayoutManager(requireContext())
+        binding.swipeDownAppList.isNestedScrollingEnabled = true
+        binding.swipeDownAppList.addOnItemTouchListener(object : RecyclerView.OnItemTouchListener {
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
+                if (e.action == MotionEvent.ACTION_DOWN) {
+                    rv.parent.requestDisallowInterceptTouchEvent(true)
+                }
+                return false
+            }
+            override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {}
+            override fun onRequestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {}
+        })
         
 
 
@@ -163,7 +175,9 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         // Register at the Activity level so ALL touches (including those consumed by RecyclerView
         // items) are forwarded to the gesture detector before any view can claim them.
         (requireActivity() as MainActivity).touchEventForwarder = { ev ->
-            swipeTouchListener.onTouch(binding.root, ev)
+            if (!isDialogShowing) {
+                swipeTouchListener.onTouch(binding.root, ev)
+            }
         }
     }
 
@@ -437,7 +451,18 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         val isAppLauncher = prefs.swipeDownAction == Constants.SwipeDownAction.APP_LAUNCHER
         binding.flSwipeDownAppSelect.isVisible = isAppLauncher
         if (isAppLauncher) {
-            swipeDownAdapter.updateItems(prefs.getSwipeDownAppList())
+            val list = prefs.getSwipeDownAppList()
+            swipeDownAdapter.updateItems(list)
+
+            // Adjust height of swipeDownAppList based on item count: max 5 items visible (280dp)
+            val maxPx = (resources.displayMetrics.density * 280).toInt()
+            val params = binding.swipeDownAppList.layoutParams
+            if (list.size > 5) {
+                params.height = maxPx
+            } else {
+                params.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            }
+            binding.swipeDownAppList.layoutParams = params
         }
     }
 
@@ -479,6 +504,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     fun setSettingsBlur(enabled: Boolean) {
+        isDialogShowing = enabled
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (enabled) {
                 val blurEffect = android.graphics.RenderEffect.createBlurEffect(15f, 15f, android.graphics.Shader.TileMode.CLAMP)
@@ -765,6 +791,17 @@ class AppGroupDialogFragment : DialogFragment() {
             }
         }
 
+        val adjustHeight = {
+            val maxPx = (resources.displayMetrics.density * 280).toInt()
+            val params = groupAppList.layoutParams
+            if (groupApps.size > 5) {
+                params.height = maxPx
+            } else {
+                params.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            }
+            groupAppList.layoutParams = params
+        }
+
         adapter = GroupAppAdapter(
             groupApps,
             onMoveUp = { pos ->
@@ -791,17 +828,20 @@ class AppGroupDialogFragment : DialogFragment() {
                     adapter.expandedPosition = -1
                     adapter.notifyDataSetChanged()
                     saveGroupChanges(null)
+                    adjustHeight()
                 }
             }
         )
         groupAppList.adapter = adapter
         groupAppList.layoutManager = LinearLayoutManager(requireContext())
+        adjustHeight()
 
         btnGroupAddApp.setOnClickListener {
             AppPickerDialogFragment.newInstance { selectedApp ->
                 groupApps.add(selectedApp)
                 adapter.notifyDataSetChanged()
                 saveGroupChanges(null)
+                adjustHeight()
             }.show(childFragmentManager, "app_picker")
         }
 

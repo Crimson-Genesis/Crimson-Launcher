@@ -260,17 +260,21 @@ The Gestures section configures what happens when you swipe down from the top of
 |---------|-------------|
 | **Swipe Down for** | Configure swipe down gesture: **Notification Panel**, **Search**, or a specific **App / App Group** |
 
+##### Swipe-Down App Carousel & Gestures
+
+If the **Swipe Down** action is set to launch an **App / App Group**, swiping down from the home screen opens a premium, themed carousel selector:
+- **Velocity-Sensitive Swipe Navigation**: Swiping left/right navigates through the app list. This uses a sliding window (150ms) to compute instantaneous velocity. Slow swipes let you change apps precisely one-by-one with a larger touch distance threshold. Flinging fast dynamically reduces the distance threshold and steps/skips up to 3 items at a time, allowing you to seamlessly fly across the app stack and reach both ends of the list in a single quick gesture.
+- **Dynamic Gravity Alignment**: The app carousel text aligns itself (left or right) dynamically matching your home screen's text alignment preference.
+
 ##### App Lists (Multi-App Launch Groups)
 
 Tap **+ Add** in the Gestures section to create a named app launch group:
-
-- Each group has one **primary app** (opened in the foreground) and optional **background apps** (opened simultaneously in the background)
-- The **first app** in the list is always the primary; remaining apps open in the background
-- If a group contains only one app, that app opens directly with no group logic applied
-- **Rename** a group by tapping its name at the top of the sub-list — the default name is the primary app's name
-- **Reorder** apps within the group using the up/down arrows; the first position is always primary
-- Groups appear alongside individual apps in the swipe-down app selector on the home screen
-- All dialogs use the app's glassmorphism theme with background blur
+- **Primary & Background Apps**: Each group has one **primary app** (opened in the foreground) and optional **background apps** (opened simultaneously in the background).
+- **First App Rule**: The **first app** in the list is always the primary; remaining apps open in the background. If a group contains only one app, that app opens directly with no group logic applied.
+- **Rename Groups**: **Rename** a group by tapping its name at the top of the sub-list — the default name is the primary app's name.
+- **Reorder Apps**: **Reorder** apps within the group using the up/down arrows; the first position is always primary.
+- **Bounded Lists & Scrollbars**: The Settings Configured Apps list and the Group Dialog list are capped to a maximum height of exactly 5 items (`280dp`) with visible vertical scrollbars to indicate scroll view state. Touch interception is configured to enable independent scrolling inside parent ScrollViews.
+- **Theming**: All dialogs use the app's glassmorphism theme with background blur.
 
 ---
 
@@ -472,6 +476,7 @@ Everything after v1.2 has been built and maintained solely by [crimson-genesis](
 
 ## Release History
 
+- **Crimson v1.7.4** – Added dynamic speed-sensitive horizontal swipe controls to the home screen swipe-down app carousel (using a 150ms sliding window to calculate instantaneous speed and dynamically scale transition thresholds/step sizes). Bounded the Settings Configured Apps list and Group Dialog list to exactly 5 items (280dp) when scrollable. Configured custom scrollbar indicators on scrollable lists, and fixed touch event interception to allow independent scrolling in parent ScrollViews. Added gravity-aligned text alignment support to the custom App Picker dialog inputs and app lists based on the user's home alignment preference.
 - **Crimson v1.7.3** – Added multi-app launch groups in the Gestures section: configure named lists where the primary app opens in the foreground and background apps open simultaneously. Custom glassmorphism app picker and rename dialogs matching the app's theme. Background blur on all dialogs. Fixed swipe left/right navigation when swiping over the app list in Settings (resolved by hooking into `MainActivity.dispatchTouchEvent`). Fixed row height expansion in app list rows and group sub-list rows. Fixed primary app label in sub-list showing the group's custom name instead of the real application name.
 - **Crimson v1.7** – Added full Chat/Notes system with text, photo, video, and voice messages. Integrated in-app camera with CameraX (photo + video capture, flip camera, swipe mode switch). Temp media workflow with grid gallery and full-screen media preview (pinch-to-zoom, video playback). Audio recording with waveform visualizer. Multi-select batch message operations and calendar date jump. APK optimized with ProGuard/R8 minification and resource shrinking.
 - **Crimson v1.6** – Held the lockscreen todo notification in place (non-dismissible foreground service), refreshes the home checklist on every unlock, and syncs notification visibility with the current task/overdue ordering.

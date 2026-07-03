@@ -73,6 +73,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
     private var swipeDownAppList: List<LauncherApp> = emptyList()
     private var swipeDownAppIndex: Int = 0
     private var lastCycleX = 0f
+    private val recentTouchPoints = mutableListOf<Pair<Long, Float>>()
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
@@ -558,22 +559,56 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                     MotionEvent.ACTION_DOWN -> {
                         startY = event.rawY
                         startX = event.rawX
+                        recentTouchPoints.clear()
+                        recentTouchPoints.add(Pair(event.eventTime, event.rawX))
                         swipeTouchListener.onTouch(v, event)
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> {
                         val dy = event.rawY - startY
                         val dx = event.rawX - startX
+                        
+                        val currentTime = event.eventTime
+                        recentTouchPoints.add(Pair(currentTime, event.rawX))
+                        recentTouchPoints.removeAll { currentTime - it.first > 150 }
+                        
+                        val speed = if (recentTouchPoints.size >= 2) {
+                            val oldest = recentTouchPoints.first()
+                            val latest = recentTouchPoints.last()
+                            val dt = latest.first - oldest.first
+                            val adx = latest.second - oldest.second
+                            if (dt > 0) (abs(adx) / dt) * 1000f else 0f
+                        } else {
+                            0f
+                        }
+                        
                         if (isDraggingLauncherMenu) {
                             updateOverlayDrag(event.rawY)
                             val deltaX = event.rawX - lastCycleX
-                            if (abs(deltaX) >= 120) {
+                            
+                            // Dynamically scale threshold distance based on drag speed
+                            val threshold = when {
+                                speed > 4000 -> 30f
+                                speed > 2500 -> 60f
+                                speed > 1200 -> 90f
+                                else -> 120f
+                            }
+                            
+                            if (abs(deltaX) >= threshold) {
                                 if (swipeDownAppList.size > 1) {
                                     val previousIndex = swipeDownAppIndex
+                                    
+                                    // Scale steps skipped based on velocity
+                                    val steps = when {
+                                        speed > 5000 -> 3
+                                        speed > 2500 -> 2
+                                        else -> 1
+                                    }
+                                    
                                     if (deltaX > 0) {
-                                        swipeDownAppIndex = (swipeDownAppIndex - 1).coerceAtLeast(0)
+                                        swipeDownAppIndex = (swipeDownAppIndex - steps).coerceAtLeast(0)
                                     } else {
-                                        swipeDownAppIndex = (swipeDownAppIndex + 1).coerceAtMost(swipeDownAppList.size - 1)
+                                        swipeDownAppIndex = (swipeDownAppIndex + steps).coerceAtMost(swipeDownAppList.size - 1)
                                     }
                                     
                                     if (swipeDownAppIndex != previousIndex) {
