@@ -1,24 +1,25 @@
 # Crimson Launcher (codename: crimson)
 
-Crimson Launcher is a forked version of Olauncher with integrated daily task management. This fork was created to gamify your days and keep Daily, Timed, and Timeless tasks visible directly on the home screen. Other task apps were too noisy or easy to forget to open. With Olauncher's simplicity as the foundation, todos were integrated directly into the launcher to keep remaining tasks always in sight.
+Crimson Launcher is a forked version of Olauncher with integrated daily task management, a notes/chat system, in-app camera, and multi-app launch groups. This fork was created to gamify your days and keep Daily, Timed, and Timeless tasks visible directly on the home screen. Other task apps were too noisy or easy to forget to open. With Olauncher's simplicity as the foundation, todos were integrated directly into the launcher to keep remaining tasks always in sight.
 
 ## Key Features
 
 - **Home-pinned checklist** with Daily, Timed, and Timeless tasks
+- **Multi-app launch groups** — configure a list of apps that open together with one gesture; primary app opens in foreground, others in background
 - **Hardware-level screen time tracking** (includes screen-on even when locked)
-- **Unlock count tracking** - know how many times you unlocked your phone
-- **Configurable daily reset time** - choose when your tasks reset (default: midnight)
-- **Boiler (Template) system** - save and swap sets of daily tasks quickly
-- **Hardcore mode** - blocks the app drawer until all today's tasks are completed
-- **Progress logging** - JSONL format with selectable storage folder
-- **Backup & Restore** - export/import all tasks, templates, and settings to JSON
-- **App management** - hide, rename, or uninstall apps directly from the drawer
-- **Chat/Notes system** - send text, photos, videos, and voice messages with date-organized history
-- **In-app Camera** - capture photos and videos directly from the launcher with CameraX, flip camera, and swipe to switch modes
-- **Temp media management** - captured media sits in a temp gallery until you send it; review, select, or discard before finalizing
-- **Audio recording** - record voice messages with a live waveform visualizer
-- **Media preview** - swipeable full-screen viewer with pinch-to-zoom for images and video playback with seek controls
-- **Offline-first** - fully functional without internet; all data stays local
+- **Unlock count tracking** — know how many times you unlocked your phone
+- **Configurable daily reset time** — choose when your tasks reset (default: midnight)
+- **Boiler (Template) system** — save and swap sets of daily tasks quickly
+- **Hardcore mode** — blocks the app drawer until all today's tasks are completed
+- **Progress logging** — JSONL format with selectable storage folder
+- **Backup & Restore** — export/import all tasks, templates, and settings to JSON
+- **App management** — hide, rename, or uninstall apps directly from the drawer
+- **Chat/Notes system** — send text, photos, videos, and voice messages with date-organized history
+- **In-app Camera** — capture photos and videos directly from the launcher with CameraX, flip camera, and swipe to switch modes
+- **Temp media management** — captured media sits in a temp gallery until you send it; review, select, or discard before finalizing
+- **Audio recording** — record voice messages with a live waveform visualizer
+- **Media preview** — swipeable full-screen viewer with pinch-to-zoom for images and video playback with seek controls
+- **Offline-first** — fully functional without internet; all data stays local
 
 ## Screenshots
 
@@ -65,7 +66,7 @@ Camera → Chat (back)
 | **Swipe Left** (from Chat) | Go to Home |
 | **Swipe Right** (from Settings) | Go to Right Page |
 | **Swipe Up** (from bottom of today's tasks) | Open App Drawer |
-| **Swipe Down** (from top of today's tasks) | Open Notification Panel or Search (based on settings) |
+| **Swipe Down** (from top of today's tasks) | Open Notification Panel or configured app/group |
 
 ---
 
@@ -81,7 +82,7 @@ The Home Page is the main dashboard displaying your daily overview and remaining
 
 **Screen Time & Unlock Count**
 - Shows total screen-on time (including when phone is locked)
-- Displays unlock count - how many times the phone was unlocked
+- Displays unlock count — how many times the phone was unlocked
 - Data is fetched at the hardware level using Android's UsageStatsManager
 - Format: `Xh Ym   [N unlocks]`
 
@@ -175,7 +176,7 @@ Press the Boiler button to access saved task templates:
 
 #### Lower Section: Task List
 
-Shows all Daily tasks for the currently active boiler. 
+Shows all Daily tasks for the currently active boiler.
 
 **Tap** a task to edit it.
 
@@ -197,7 +198,7 @@ The App Drawer displays all installed applications on your device.
 #### Features
 
 - Lists all installed apps alphabetically or by recent use
-- Search functionality - type to filter apps
+- Search functionality — type to filter apps
 - Auto-show keyboard option (configurable in Settings)
 
 #### Long-press Options
@@ -253,9 +254,23 @@ The Settings Page contains all customization options for Crimson Launcher.
 
 #### Gestures Section
 
+The Gestures section configures what happens when you swipe down from the top of the home screen, and lets you manage app launch groups.
+
 | Setting | Description |
 |---------|-------------|
-| **Swipe Down for** | Configure swipe down gesture: **Notification Panel** or **Search** |
+| **Swipe Down for** | Configure swipe down gesture: **Notification Panel**, **Search**, or a specific **App / App Group** |
+
+##### App Lists (Multi-App Launch Groups)
+
+Tap **+ Add** in the Gestures section to create a named app launch group:
+
+- Each group has one **primary app** (opened in the foreground) and optional **background apps** (opened simultaneously in the background)
+- The **first app** in the list is always the primary; remaining apps open in the background
+- If a group contains only one app, that app opens directly with no group logic applied
+- **Rename** a group by tapping its name at the top of the sub-list — the default name is the primary app's name
+- **Reorder** apps within the group using the up/down arrows; the first position is always primary
+- Groups appear alongside individual apps in the swipe-down app selector on the home screen
+- All dialogs use the app's glassmorphism theme with background blur
 
 ---
 
@@ -265,9 +280,10 @@ The Settings Page contains all customization options for Crimson Launcher.
 |---------|-------------|
 | **Hardcore Mode** | When enabled, blocks App Drawer until all today's tasks are completed |
 | **Daily Reset Time** | Set the time when daily tasks reset (default: 00:00 midnight) |
-| **Backup Data** | Export all settings, tasks, and templates to a JSON file (user selects save location) |
-| **Restore Data** | Import from a previously saved JSON backup file. **Note:** Current tasks will be replaced |
-| **Clean Slate** | Delete all boilers and tasks - a fresh start |
+| **Lockscreen Todo** | Show a persistent notification on the lockscreen with today's remaining tasks |
+| **Backup Data** | Export all settings, tasks, and templates to a ZIP file (user selects save location) |
+| **Restore Data** | Import from a previously saved backup file. **Note:** Current tasks will be replaced |
+| **Clean Slate** | Delete all boilers and tasks — a fresh start |
 
 ---
 
@@ -299,16 +315,16 @@ The Chat Page is a notes and messaging system integrated into the launcher. Acce
 #### Features
 
 **Message Types**
-- **Text messages** - type and send notes with timestamps
-- **Photo/Video messages** - attach media captured from the in-app camera or picked from gallery
-- **Voice messages** - record audio with a live waveform visualizer, playback with seek controls
+- **Text messages** — type and send notes with timestamps
+- **Photo/Video messages** — attach media captured from the in-app camera or picked from gallery
+- **Voice messages** — record audio with a live waveform visualizer, playback with seek controls
 
 **Message Management**
 - Messages are grouped by date with headers (Today, Yesterday, date)
 - Long-press a message to reveal actions: Edit, Copy, Delete
-- **Multi-select mode** - tap the checkmark icon to enter selection mode, then long-press multiple messages to batch delete
-- **Calendar jump** - tap the calendar icon to jump to any date with messages
-- **Keyboard-aware** - input field moves above the keyboard automatically
+- **Multi-select mode** — tap the checkmark icon to enter selection mode, then long-press multiple messages to batch delete
+- **Calendar jump** — tap the calendar icon to jump to any date with messages
+- **Keyboard-aware** — input field moves above the keyboard automatically
 
 **Input Controls**
 
@@ -336,9 +352,9 @@ The Camera fragment provides a full-featured in-app camera for capturing photos 
 #### Features
 
 **Capture Modes**
-- **Photo mode** - capture high-quality still images using CameraX
-- **Video mode** - record video with audio; swipe left/right to switch modes
-- **Flip camera** - toggle between front and rear cameras
+- **Photo mode** — capture high-quality still images using CameraX
+- **Video mode** — record video with audio; swipe left/right to switch modes
+- **Flip camera** — toggle between front and rear cameras
 
 **Temp Media Workflow**
 - Captured photos and videos are stored as **temporary media**
@@ -378,7 +394,7 @@ Tapping an image or video thumbnail opens a full-screen immersive viewer:
 - **Pinch-to-zoom** (up to 5x) with pan support
 - **Double-tap** to zoom in/out
 - **Video playback** with play/pause, seek bar, and time display
-- **Memory-efficient** - loads preview thumbnails first, then high-quality images with LRU caching
+- **Memory-efficient** — loads preview thumbnails first, then high-quality images with LRU caching
 - Tap outside the media or the close button to dismiss
 
 ---
@@ -388,14 +404,14 @@ Tapping an image or video thumbnail opens a full-screen immersive viewer:
 ### Requirements
 
 1. **Android Device** (Android 8.0+ recommended)
-2. **Usage Access Permission** - Required for screen time and unlock tracking
-3. **No Internet Required** - Fully functional offline
+2. **Usage Access Permission** — Required for screen time and unlock tracking
+3. **No Internet Required** — Fully functional offline
 
 ### Installation Steps
 
 1. Download the latest APK from the [Releases](https://github.com/crimson-genesis/Crimson-Launcher/releases) page
 2. Transfer the APK to your device
-3. **For Google/Pixel phones**: 
+3. **For Google/Pixel phones**:
    - Go to Settings → Security → Disable "Verify apps over USB" or enable "Install unknown apps"
    - This allows installation of apps outside the Play Store
 4. Open the APK file to install
@@ -404,7 +420,7 @@ Tapping an image or video thumbnail opens a full-screen immersive viewer:
 ### Permissions
 
 - **Usage Access**: For screen time and unlock count tracking
-- **Storage Access**: For backup/restore and log folder selection (uses SAF - no storage permission needed on Android 10+)
+- **Storage Access**: For backup/restore and log folder selection (uses SAF — no storage permission needed on Android 10+)
 - **Camera**: For in-app photo and video capture
 - **Microphone**: For video audio recording and voice messages
 
@@ -420,6 +436,7 @@ Tapping an image or video thumbnail opens a full-screen immersive viewer:
 - **Logs**: JSONL files in user-selected folder
 - **Chat Messages**: JSON files organized by date in user-selectable storage (SAF) or internal storage
 - **Media (photos, videos, audio)**: Files organized by date/type in user-selectable storage (SAF) or internal storage; temp media auto-cleaned on day reset
+- **App Groups**: Stored as JSON within SharedPreferences alongside individual app gesture settings
 
 ### Task Types
 
@@ -439,7 +456,7 @@ Tapping an image or video thumbnail opens a full-screen immersive viewer:
 
 ## License
 
-- **GPLv3** - See [LICENSE](./LICENSE) file
+- **GPLv3** — See [LICENSE](./LICENSE) file
 - **Forked from**: [Olauncher](https://github.com/tanujnotes/Olauncher) © 2020-2026 Tanuj (tanujnotes)
 - **Current Maintainer**: © 2026 Yuvraj Mahilange (crimson-genesis)
 
@@ -455,7 +472,8 @@ Everything after v1.2 has been built and maintained solely by [crimson-genesis](
 
 ## Release History
 
-- **Crimson v1.7** – Added full Chat/Notes system with text, photo, video, and voice messages. Integrated in-app camera with CameraX (photo + video capture, flip camera, swipe mode switch). Temp media workflow with grid gallery and full-screen media preview (pinch-to-zoom, video playback). Audio recording with waveform visualizer. Multi-select batch message operations and calendar date jump. The APK is now even smaller and faster than before thanks to ProGuard/R8 minification, resource shrinking, and aggressive bytecode optimization — delivering a leaner, snappier experience.
+- **Crimson v1.7.3** – Added multi-app launch groups in the Gestures section: configure named lists where the primary app opens in the foreground and background apps open simultaneously. Custom glassmorphism app picker and rename dialogs matching the app's theme. Background blur on all dialogs. Fixed swipe left/right navigation when swiping over the app list in Settings (resolved by hooking into `MainActivity.dispatchTouchEvent`). Fixed row height expansion in app list rows and group sub-list rows. Fixed primary app label in sub-list showing the group's custom name instead of the real application name.
+- **Crimson v1.7** – Added full Chat/Notes system with text, photo, video, and voice messages. Integrated in-app camera with CameraX (photo + video capture, flip camera, swipe mode switch). Temp media workflow with grid gallery and full-screen media preview (pinch-to-zoom, video playback). Audio recording with waveform visualizer. Multi-select batch message operations and calendar date jump. APK optimized with ProGuard/R8 minification and resource shrinking.
 - **Crimson v1.6** – Held the lockscreen todo notification in place (non-dismissible foreground service), refreshes the home checklist on every unlock, and syncs notification visibility with the current task/overdue ordering.
 - **Crimson v1.5** – Hardened boiler/template isolation, ensured restores reselect the right template, deduplicated completed rows, and triggered `refreshTodayList()` automatically after resetting at the configured time.
 - **Crimson v1.4** – Refined template isolation, restore hygiene, and the backup/log pipeline so today/todo feeds filter by originTemplateId and imported data immediately loads.

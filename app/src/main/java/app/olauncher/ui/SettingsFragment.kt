@@ -934,6 +934,9 @@ class AppPickerDialogFragment : DialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val context = requireContext()
+        val prefs = Prefs(context)
+        val alignment = prefs.homeAlignment
+
         val layout = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
@@ -948,6 +951,7 @@ class AppPickerDialogFragment : DialogFragment() {
             setPadding(24, 24, 24, 24)
             setTextColor(android.graphics.Color.WHITE)
             setBackgroundResource(R.drawable.rounded_rect_transparent)
+            gravity = alignment
         }
         layout.addView(searchInput)
 
@@ -958,7 +962,7 @@ class AppPickerDialogFragment : DialogFragment() {
         }
         layout.addView(list)
 
-        adapter = PickerAdapter(searchResults) { selectedAppModel ->
+        adapter = PickerAdapter(searchResults, alignment) { selectedAppModel ->
             onAppSelected?.invoke(LauncherApp(
                 packageName = selectedAppModel.appPackage,
                 label = selectedAppModel.appLabel,
@@ -998,6 +1002,7 @@ class AppPickerDialogFragment : DialogFragment() {
 
     private class PickerAdapter(
         private val items: List<AppModel>,
+        private val alignment: Int,
         private val onClick: (AppModel.App) -> Unit
     ) : RecyclerView.Adapter<PickerAdapter.ViewHolder>() {
 
@@ -1010,6 +1015,7 @@ class AppPickerDialogFragment : DialogFragment() {
                 textSize = 18f
                 setPadding(24, 24, 24, 24)
                 setTextColor(android.graphics.Color.WHITE)
+                gravity = alignment
                 layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                 val typedValue = android.util.TypedValue()
                 parent.context.theme.resolveAttribute(android.R.attr.selectableItemBackground, typedValue, true)
