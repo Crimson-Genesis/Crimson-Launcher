@@ -219,6 +219,7 @@ class MainActivity : AppCompatActivity() {
         initClickListeners()
         initObservers(viewModel)
         viewModel.getAppList(false)
+        viewModel.getHiddenApps(false)
 
         window.addFlags(FLAG_LAYOUT_NO_LIMITS)
 

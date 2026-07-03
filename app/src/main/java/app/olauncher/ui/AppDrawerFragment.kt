@@ -137,6 +137,7 @@ class AppDrawerFragment : Fragment() {
         adapter = AppDrawerAdapter(
             flag,
             prefs.homeAlignment,
+            prefs,
             appClickListener = { appModel ->
                 viewModel.selectedApp(appModel, flag)
                 if (flag == Constants.FLAG_LAUNCH_APP || flag == Constants.FLAG_HIDDEN_APPS)
@@ -244,6 +245,16 @@ class AppDrawerFragment : Fragment() {
                 }
             }
         } else {
+            viewModel.getHiddenApps(false)
+            viewModel.hiddenApps.observe(viewLifecycleOwner) {
+                it?.let { hidden ->
+                    adapter.hiddenAppsList = hidden
+                    // Trigger a re-filter to refresh results with the loaded hidden list if searching
+                    if (binding.search.query.isNotEmpty()) {
+                        adapter.filter.filter(binding.search.query)
+                    }
+                }
+            }
             viewModel.appList.observe(viewLifecycleOwner) {
                 it?.let { appModels ->
                     adapter.setAppList(appModels.toMutableList())

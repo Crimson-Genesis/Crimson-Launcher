@@ -23,6 +23,7 @@ import app.olauncher.R
 import app.olauncher.data.AppModel
 import app.olauncher.data.ChatMessage
 import app.olauncher.data.Constants
+import app.olauncher.data.LauncherApp
 import app.olauncher.data.Prefs
 import app.olauncher.data.TodoItem
 import app.olauncher.data.TodoTemplate
@@ -518,4 +519,23 @@ private fun parseTemplateItem(jsonObject: JSONObject): TodoTemplateItem {
         toDate = if (jsonObject.isNull("toDate")) null else jsonObject.optLong("toDate"),
         toTime = if (jsonObject.isNull("toTime")) null else jsonObject.optString("toTime")
     )
+}
+
+fun filterHiddenAppsFromSwipeDownList(list: List<LauncherApp>, hiddenApps: Set<String>): List<LauncherApp> {
+    return list.mapNotNull { app ->
+        val parentKey = "${app.packageName}|${app.userHandle}"
+        if (hiddenApps.contains(parentKey)) {
+            null
+        } else {
+            val filteredBg = app.backgroundApps.filter { bgApp ->
+                val bgKey = "${bgApp.packageName}|${bgApp.userHandle}"
+                !hiddenApps.contains(bgKey)
+            }
+            if (app.backgroundApps.isNotEmpty() && filteredBg.isEmpty()) {
+                null
+            } else {
+                app.copy(backgroundApps = filteredBg)
+            }
+        }
+    }
 }

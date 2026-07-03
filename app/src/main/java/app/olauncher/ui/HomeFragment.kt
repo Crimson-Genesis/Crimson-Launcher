@@ -50,6 +50,7 @@ import app.olauncher.helper.openAlarmApp
 import app.olauncher.helper.openCalendar
 import app.olauncher.helper.openSearch
 import app.olauncher.helper.showToast
+import app.olauncher.helper.filterHiddenAppsFromSwipeDownList
 import app.olauncher.listener.OnSwipeTouchListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -294,7 +295,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
 
     private fun showOverlayMenu() {
         lastGestureSelection = -1
-        val settingsList = prefs.getSwipeDownAppList()
+        val settingsList = filterHiddenAppsFromSwipeDownList(prefs.getSwipeDownAppList(), prefs.hiddenApps)
         if (settingsList.isNotEmpty()) {
             val defaultApp = settingsList[0]
             val remainingList = settingsList.subList(1, settingsList.size)

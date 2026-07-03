@@ -27,6 +27,7 @@ class Prefs(context: Context) {
     private val SWIPE_LEFT_ENABLED = "SWIPE_LEFT_ENABLED"
     private val SWIPE_RIGHT_ENABLED = "SWIPE_RIGHT_ENABLED"
     private val HIDDEN_APPS = "HIDDEN_APPS"
+    private val HIDDEN_PLUS_APPS = "HIDDEN_PLUS_APPS"
     private val HIDDEN_APPS_UPDATED = "HIDDEN_APPS_UPDATED"
     private val APP_THEME = "APP_THEME"
     private val ABOUT_CLICKED = "ABOUT_CLICKED"
@@ -160,6 +161,10 @@ class Prefs(context: Context) {
     var hiddenApps: MutableSet<String>
         get() = prefs.getStringSet(HIDDEN_APPS, mutableSetOf()) as MutableSet<String>
         set(value) = prefs.edit { putStringSet(HIDDEN_APPS, value).apply() }
+        
+    var hiddenPlusApps: MutableSet<String>
+        get() = prefs.getStringSet(HIDDEN_PLUS_APPS, mutableSetOf()) as MutableSet<String>
+        set(value) = prefs.edit { putStringSet(HIDDEN_PLUS_APPS, value).apply() }
 
     var hiddenAppsUpdated: Boolean
         get() = prefs.getBoolean(HIDDEN_APPS_UPDATED, false)

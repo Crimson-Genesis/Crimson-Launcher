@@ -82,40 +82,51 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
 
         swipeDownAdapter = SwipeDownAppAdapter(
             mutableListOf(),
-            onMoveUp = { position ->
+            onMoveUp = { item, position ->
                 val list = prefs.getSwipeDownAppList().toMutableList()
-                if (position > 0 && position in list.indices) {
-                    val item = list.removeAt(position)
-                    list.add(position - 1, item)
+                val originalIndex = list.indexOfFirst { it.packageName == item.packageName && it.userHandle == item.userHandle }
+                if (originalIndex > 0 && originalIndex in list.indices) {
+                    val originalItem = list.removeAt(originalIndex)
+                    list.add(originalIndex - 1, originalItem)
                     prefs.setSwipeDownAppList(list)
                     swipeDownAdapter.expandedPosition = position - 1
                     populateSwipeDownAction()
                 }
             },
-            onMoveDown = { position ->
+            onMoveDown = { item, position ->
                 val list = prefs.getSwipeDownAppList().toMutableList()
-                if (position in list.indices && position < list.size - 1) {
-                    val item = list.removeAt(position)
-                    list.add(position + 1, item)
+                val originalIndex = list.indexOfFirst { it.packageName == item.packageName && it.userHandle == item.userHandle }
+                if (originalIndex in list.indices && originalIndex < list.size - 1) {
+                    val originalItem = list.removeAt(originalIndex)
+                    list.add(originalIndex + 1, originalItem)
                     prefs.setSwipeDownAppList(list)
                     swipeDownAdapter.expandedPosition = position + 1
                     populateSwipeDownAction()
                 }
             },
-            onEdit = { position ->
-                showEditSwipeDownAppDialog(position)
+            onEdit = { item, _ ->
+                val list = prefs.getSwipeDownAppList()
+                val originalIndex = list.indexOfFirst { it.packageName == item.packageName && it.userHandle == item.userHandle }
+                if (originalIndex in list.indices) {
+                    showEditSwipeDownAppDialog(originalIndex)
+                }
             },
-            onDelete = { position ->
+            onDelete = { item, _ ->
                 val list = prefs.getSwipeDownAppList().toMutableList()
-                if (position in list.indices) {
-                    list.removeAt(position)
+                val originalIndex = list.indexOfFirst { it.packageName == item.packageName && it.userHandle == item.userHandle }
+                if (originalIndex in list.indices) {
+                    list.removeAt(originalIndex)
                     prefs.setSwipeDownAppList(list)
                     swipeDownAdapter.expandedPosition = -1
                     populateSwipeDownAction()
                 }
             },
-            onManageGroup = { position ->
-                showManageGroupDialog(position)
+            onManageGroup = { item, _ ->
+                val list = prefs.getSwipeDownAppList()
+                val originalIndex = list.indexOfFirst { it.packageName == item.packageName && it.userHandle == item.userHandle }
+                if (originalIndex in list.indices) {
+                    showManageGroupDialog(originalIndex)
+                }
             }
         )
         binding.swipeDownAppList.adapter = swipeDownAdapter
@@ -124,7 +135,9 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         binding.swipeDownAppList.addOnItemTouchListener(object : RecyclerView.OnItemTouchListener {
             override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
                 if (e.action == MotionEvent.ACTION_DOWN) {
-                    rv.parent.requestDisallowInterceptTouchEvent(true)
+                    if (swipeDownAdapter.itemCount > 5) {
+                        rv.parent.requestDisallowInterceptTouchEvent(true)
+                    }
                 }
                 return false
             }
@@ -452,12 +465,13 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         binding.flSwipeDownAppSelect.isVisible = isAppLauncher
         if (isAppLauncher) {
             val list = prefs.getSwipeDownAppList()
-            swipeDownAdapter.updateItems(list)
+            val filteredList = filterHiddenAppsFromSwipeDownList(list, prefs.hiddenApps)
+            swipeDownAdapter.updateItems(filteredList)
 
-            // Adjust height of swipeDownAppList based on item count: max 5 items visible (280dp)
-            val maxPx = (resources.displayMetrics.density * 280).toInt()
+            // Adjust height of swipeDownAppList based on item count: max 5 items visible (240dp)
+            val maxPx = (resources.displayMetrics.density * 240).toInt()
             val params = binding.swipeDownAppList.layoutParams
-            if (list.size > 5) {
+            if (filteredList.size > 5) {
                 params.height = maxPx
             } else {
                 params.height = ViewGroup.LayoutParams.WRAP_CONTENT
@@ -640,11 +654,11 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
 
 class SwipeDownAppAdapter(
     private var items: MutableList<LauncherApp>,
-    private val onMoveUp: (Int) -> Unit,
-    private val onMoveDown: (Int) -> Unit,
-    private val onEdit: (Int) -> Unit,
-    private val onDelete: (Int) -> Unit,
-    private val onManageGroup: (Int) -> Unit
+    private val onMoveUp: (LauncherApp, Int) -> Unit,
+    private val onMoveDown: (LauncherApp, Int) -> Unit,
+    private val onEdit: (LauncherApp, Int) -> Unit,
+    private val onDelete: (LauncherApp, Int) -> Unit,
+    private val onManageGroup: (LauncherApp, Int) -> Unit
 ) : RecyclerView.Adapter<SwipeDownAppAdapter.ViewHolder>() {
 
     var expandedPosition = -1
@@ -679,11 +693,11 @@ class SwipeDownAppAdapter(
             notifyItemChanged(holder.bindingAdapterPosition)
         }
 
-        holder.btnMoveUp.setOnClickListener { onMoveUp(holder.bindingAdapterPosition) }
-        holder.btnMoveDown.setOnClickListener { onMoveDown(holder.bindingAdapterPosition) }
-        holder.btnEdit.setOnClickListener { onEdit(holder.bindingAdapterPosition) }
-        holder.btnDelete.setOnClickListener { onDelete(holder.bindingAdapterPosition) }
-        holder.btnGroup.setOnClickListener { onManageGroup(holder.bindingAdapterPosition) }
+        holder.btnMoveUp.setOnClickListener { onMoveUp(item, holder.bindingAdapterPosition) }
+        holder.btnMoveDown.setOnClickListener { onMoveDown(item, holder.bindingAdapterPosition) }
+        holder.btnEdit.setOnClickListener { onEdit(item, holder.bindingAdapterPosition) }
+        holder.btnDelete.setOnClickListener { onDelete(item, holder.bindingAdapterPosition) }
+        holder.btnGroup.setOnClickListener { onManageGroup(item, holder.bindingAdapterPosition) }
     }
 
     override fun getItemCount() = items.size
@@ -703,6 +717,7 @@ class AppGroupDialogFragment : DialogFragment() {
     private lateinit var prefs: Prefs
     private lateinit var groupApps: MutableList<LauncherApp>
     private lateinit var adapter: GroupAppAdapter
+    private val hiddenBgApps = mutableListOf<LauncherApp>()
 
     companion object {
         fun newInstance(index: Int): AppGroupDialogFragment {
@@ -719,9 +734,17 @@ class AppGroupDialogFragment : DialogFragment() {
         val mainAppList = prefs.getSwipeDownAppList()
         val mainApp = mainAppList.getOrNull(groupIndex)
         groupApps = mutableListOf()
+        hiddenBgApps.clear()
         if (mainApp != null) {
             groupApps.add(mainApp.copy(backgroundApps = emptyList()))
-            groupApps.addAll(mainApp.backgroundApps)
+            for (bgApp in mainApp.backgroundApps) {
+                val key = "${bgApp.packageName}|${bgApp.userHandle}"
+                if (prefs.hiddenApps.contains(key)) {
+                    hiddenBgApps.add(bgApp)
+                } else {
+                    groupApps.add(bgApp)
+                }
+            }
         }
     }
 
@@ -792,7 +815,7 @@ class AppGroupDialogFragment : DialogFragment() {
         }
 
         val adjustHeight = {
-            val maxPx = (resources.displayMetrics.density * 280).toInt()
+            val maxPx = (resources.displayMetrics.density * 240).toInt()
             val params = groupAppList.layoutParams
             if (groupApps.size > 5) {
                 params.height = maxPx
@@ -858,7 +881,8 @@ class AppGroupDialogFragment : DialogFragment() {
         
         if (groupApps.isNotEmpty()) {
             val primaryApp = groupApps[0]
-            val bgApps = groupApps.subList(1, groupApps.size)
+            val bgApps = groupApps.subList(1, groupApps.size).toMutableList()
+            bgApps.addAll(hiddenBgApps)
             val finalCustomName = customName ?: mainApp.customLabel
             
             mainAppList[groupIndex] = LauncherApp(
@@ -874,7 +898,7 @@ class AppGroupDialogFragment : DialogFragment() {
                 label = "",
                 userHandle = "",
                 customLabel = customName ?: mainApp.customLabel,
-                backgroundApps = emptyList()
+                backgroundApps = hiddenBgApps
             )
         }
         

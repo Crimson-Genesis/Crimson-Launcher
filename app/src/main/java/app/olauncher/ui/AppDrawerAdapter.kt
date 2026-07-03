@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 import app.olauncher.R
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
+import app.olauncher.data.Prefs
 import app.olauncher.databinding.AdapterAppDrawerBinding
 import app.olauncher.helper.hideKeyboard
 import app.olauncher.helper.isSystemApp
@@ -26,6 +27,7 @@ import java.text.Normalizer
 class AppDrawerAdapter(
     private var flag: Int,
     private val homeAlignment: Int,
+    private val prefs: Prefs,
     private val appClickListener: (AppModel) -> Unit,
     private val appInfoListener: (AppModel) -> Unit,
     private val appDeleteListener: (AppModel) -> Unit,
@@ -58,6 +60,7 @@ class AppDrawerAdapter(
     private val separatorRegex = Regex("[-_+,. ]")
 
     var appsList: List<AppModel> = emptyList()
+    var hiddenAppsList: List<AppModel> = emptyList()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
         ViewHolder(
@@ -87,6 +90,8 @@ class AppDrawerAdapter(
         }
     }
 
+    private var pendingHidePlusLaunch: AppModel? = null
+
     override fun getFilter(): Filter = this.appFilter
 
     private fun createAppFilter(): Filter {
@@ -95,9 +100,43 @@ class AppDrawerAdapter(
                 isBangSearch = charSearch?.startsWith("!") ?: false
                 autoLaunch = charSearch?.startsWith(" ")?.not() ?: true
 
-                val filtered = if (charSearch.isNullOrBlank()) appsList
+                val isQueryEmpty = charSearch.isNullOrBlank() || charSearch.toString().trim() == "."
+
+                val matchedRegular = if (isQueryEmpty) appsList
                 else appsList.filter { app ->
-                    appLabelMatches(app.appLabel, charSearch)
+                    appLabelMatches(app.appLabel, charSearch!!)
+                }
+
+                val matchedHidePlus = if (isQueryEmpty) {
+                    emptyList()
+                } else {
+                    val hiddenPlusKeys = prefs.hiddenPlusApps
+                    hiddenAppsList.filter { app ->
+                        if (app is AppModel.App) {
+                            val key = app.appPackage + "|" + app.user.toString()
+                            hiddenPlusKeys.contains(key) && appLabelMatches(app.appLabel, charSearch!!)
+                        } else {
+                            false
+                        }
+                    }
+                }
+
+                val totalCount = matchedRegular.size + matchedHidePlus.size
+
+                val filtered = if (isQueryEmpty) {
+                    pendingHidePlusLaunch = null
+                    appsList
+                } else if (totalCount == 1) {
+                    if (matchedHidePlus.size == 1 && matchedRegular.isEmpty() && flag == Constants.FLAG_LAUNCH_APP) {
+                        pendingHidePlusLaunch = matchedHidePlus[0]
+                        emptyList()
+                    } else {
+                        pendingHidePlusLaunch = null
+                        matchedRegular + matchedHidePlus
+                    }
+                } else {
+                    pendingHidePlusLaunch = null
+                    matchedRegular
                 }
 
                 val filterResults = FilterResults()
@@ -107,6 +146,12 @@ class AppDrawerAdapter(
 
             @Suppress("UNCHECKED_CAST")
             override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                val pendingLaunch = pendingHidePlusLaunch
+                if (pendingLaunch != null && autoLaunch && isBangSearch.not() && flag == Constants.FLAG_LAUNCH_APP) {
+                    pendingHidePlusLaunch = null
+                    appClickListener(pendingLaunch)
+                    return
+                }
                 results?.values?.let {
                     val items = it as List<AppModel>
                     submitList(items) {
@@ -133,13 +178,26 @@ class AppDrawerAdapter(
 
     private fun appLabelMatches(appLabel: String, charSearch: CharSequence): Boolean {
         if (appLabel.isEmpty()) return false
-        val search = charSearch.trim()
-        if (appLabel.contains(search, true)) return true
+        var search = charSearch.trim()
+        val isDotSearch = search.startsWith(".")
+        if (isDotSearch) {
+            search = search.substring(1).trim()
+        }
+        if (search.isEmpty()) return false
 
-        return Normalizer.normalize(appLabel, Normalizer.Form.NFD)
-            .replace(markRegex, "")
-            .replace(separatorRegex, "")
-            .contains(search, true)
+        if (isDotSearch) {
+            if (appLabel.startsWith(search, true)) return true
+            return Normalizer.normalize(appLabel, Normalizer.Form.NFD)
+                .replace(markRegex, "")
+                .replace(separatorRegex, "")
+                .startsWith(search, true)
+        } else {
+            if (appLabel.contains(search, true)) return true
+            return Normalizer.normalize(appLabel, Normalizer.Form.NFD)
+                .replace(markRegex, "")
+                .replace(separatorRegex, "")
+                .contains(search, true)
+        }
     }
 
     fun setAppList(newList: MutableList<AppModel>) {
@@ -164,7 +222,7 @@ class AppDrawerAdapter(
             appClickListener(getItem(0))
     }
 
-    class ViewHolder(private val binding: AdapterAppDrawerBinding) :
+    inner class ViewHolder(private val binding: AdapterAppDrawerBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(
             flag: Int,
@@ -275,6 +333,37 @@ class AppDrawerAdapter(
                     renameLayout.visibility = View.GONE
                 }
             }
+            if (flag == Constants.FLAG_HIDDEN_APPS) {
+                appHidePlus.visibility = View.VISIBLE
+                val key = appModel.appPackage + "|" + appModel.user.toString()
+                
+                fun updateHidePlusState(active: Boolean) {
+                    if (active) {
+                        appHidePlus.text = "Hide+ On"
+                        appHidePlus.setTextColor(root.context.getColor(R.color.colorAccent))
+                    } else {
+                        appHidePlus.text = "Hide+"
+                        appHidePlus.setTextColor(root.context.getColor(R.color.whiteTrans50))
+                    }
+                }
+                
+                updateHidePlusState(prefs.hiddenPlusApps.contains(key))
+                
+                appHidePlus.setOnClickListener {
+                    val currentSet = prefs.hiddenPlusApps.toMutableSet()
+                    if (currentSet.contains(key)) {
+                        currentSet.remove(key)
+                        updateHidePlusState(false)
+                    } else {
+                        currentSet.add(key)
+                        updateHidePlusState(true)
+                    }
+                    prefs.hiddenPlusApps = currentSet
+                }
+            } else {
+                appHidePlus.visibility = View.GONE
+            }
+
             appInfo.setOnClickListener { appInfoListener(appModel) }
             appDelete.setOnClickListener { appDeleteListener(appModel) }
             appMenuClose.setOnClickListener {
